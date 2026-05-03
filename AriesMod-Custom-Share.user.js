@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Arie's Mod Custom Share
 // @namespace    Quinoa
-// @version      10.0.1
+// @version      10.0.2
 // @match        https://1227719606223765687.discordsays.com/*
 // @match        https://magiccircle.gg/r/*
 // @match        https://magicgarden.gg/r/*
@@ -13463,6 +13463,25 @@
     if (section === "decor" && entry?.decorId) return () => PlayerService.purchaseDecor(entry.decorId);
     return null;
   }
+  function getAutoBuyRestockPurchaseCounterKey(section, entry) {
+    if (!entry || typeof entry !== "object") return null;
+    if (section === "seed") return entry.species ? String(entry.species) : null;
+    if (section === "egg") return entry.eggId ? String(entry.eggId) : null;
+    if (section === "tool") return entry.toolId ? String(entry.toolId) : null;
+    if (section === "decor") return entry.decorId ? String(entry.decorId) : null;
+    return null;
+  }
+  async function readAutoBuyRestockPurchaseCount(section, entry) {
+    const key = getAutoBuyRestockPurchaseCounterKey(section, entry);
+    if (!key) return null;
+    try {
+      const snapshot = await Atoms.shop.myShopPurchases.get();
+      const purchases = snapshot?.[section]?.purchases;
+      return Number.isFinite(Number(purchases?.[key])) ? Math.max(0, Number(purchases[key])) : 0;
+    } catch {
+      return null;
+    }
+  }
   function normalizeAutoBuyRestockQuery(value) {
     return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
   }
@@ -13483,23 +13502,145 @@
     ].map(normalizeAutoBuyRestockQuery).filter(Boolean);
     return normalizedFilters.some((needle) => haystack.some((value) => value.includes(needle)));
   }
-  function summarizeAutoBuyRestockSnapshot(shops) {
+  function captureAutoBuyRestockSnapshot(shops) {
+    const sections = ["seed", "egg", "tool", "decor"];
+    const snapshot = {};
+    for (const section of sections) {
+      const inventory = Array.isArray(shops?.[section]?.inventory) ? shops[section].inventory : [];
+      snapshot[section] = {
+        ids: inventory.map((entry) => getAutoBuyRestockItemId(section, entry)).filter(Boolean),
+        restock: Number.isFinite(Number(shops?.[section]?.secondsUntilRestock)) ? Math.max(0, Math.floor(Number(shops[section].secondsUntilRestock))) : 0
+      };
+    }
+    return snapshot;
+  }
+  function summarizeAutoBuyRestockSnapshot(snapshot) {
     const sections = ["seed", "egg", "tool", "decor"];
     return sections.map((section) => {
-      const inventory = Array.isArray(shops?.[section]?.inventory) ? shops[section].inventory : [];
-      const ids = inventory.map((entry) => getAutoBuyRestockItemId(section, entry)).filter(Boolean);
-      return `${section}:${ids.join("|")}`;
+      const sec = snapshot?.[section] ?? {};
+      const ids = Array.isArray(sec.ids) ? sec.ids : [];
+      const restock = Number.isFinite(Number(sec.restock)) ? Math.max(0, Math.floor(Number(sec.restock))) : 0;
+      return `${section}:${ids.join("|")}@${restock}`;
     }).join(";");
+  }
+  function getAutoBuyRestockTriggeredSections(prevSnapshot, nextSnapshot) {
+    const sections = ["seed", "egg", "tool", "decor"];
+    const triggered = [];
+    for (const section of sections) {
+      const prevSec = prevSnapshot?.[section] ?? {};
+      const nextSec = nextSnapshot?.[section] ?? {};
+      const prevIds = Array.isArray(prevSec.ids) ? prevSec.ids : [];
+      const nextIds = Array.isArray(nextSec.ids) ? nextSec.ids : [];
+      const prevRestock = Number.isFinite(Number(prevSec.restock)) ? Math.max(0, Math.floor(Number(prevSec.restock))) : 0;
+      const nextRestock = Number.isFinite(Number(nextSec.restock)) ? Math.max(0, Math.floor(Number(nextSec.restock))) : 0;
+      if (prevIds.join("|") !== nextIds.join("|")) {
+        triggered.push(section);
+        continue;
+      }
+      if (nextRestock > prevRestock) {
+        triggered.push(section);
+      }
+    }
+    return triggered;
+  }
+  async function readAutoBuyRestockShopsSnapshot() {
+    try {
+      const raw = await Atoms.shop.shops.get();
+      const co = (sec) => ({
+        inventory: Array.isArray(sec?.inventory) ? sec.inventory : [],
+        secondsUntilRestock: Number(sec?.secondsUntilRestock) || 0
+      });
+      return {
+        seed: co(raw?.seed),
+        egg: co(raw?.egg),
+        tool: co(raw?.tool),
+        decor: co(raw?.decor)
+      };
+    } catch {
+      return null;
+    }
+  }
+  function summarizeAutoBuyRestockPurchased(purchased) {
+    const rows = Array.isArray(purchased) ? purchased : [];
+    return rows.map((entry) => {
+      const itemId = String(entry?.itemId || "").trim();
+      const qty = Math.max(0, Math.floor(Number(entry?.qty) || 0));
+      if (!itemId) return "";
+      return qty > 1 ? `${itemId} x${qty}` : itemId;
+    }).filter(Boolean).join(", ");
+  }
+  function countAutoBuyRestockPurchased(purchased) {
+    const rows = Array.isArray(purchased) ? purchased : [];
+    return rows.reduce((total, entry) => total + Math.max(0, Math.floor(Number(entry?.qty) || 0)), 0);
   }
   function createAutoBuyRestockController() {
     let started = false;
     let inFlight = false;
-    let lastSnapshot = "";
+    let lastSnapshot = null;
     const purchasedKeys = /* @__PURE__ */ new Map();
     const purgePurchasedKeys = () => {
       const cutoff = Date.now() - 12e4;
       for (const [key2, ts] of purchasedKeys.entries()) {
         if (ts < cutoff) purchasedKeys.delete(key2);
+      }
+    };
+    const buildTasks = (shops, snapshot, sections, filters, forceManual = false) => {
+      const tasks = [];
+      for (const section of sections) {
+        const inventory = Array.isArray(shops?.[section]?.inventory) ? shops[section].inventory : [];
+        for (const entry of inventory) {
+          if (!doesAutoBuyRestockEntryMatch(section, entry, filters)) continue;
+          const itemId = getAutoBuyRestockItemId(section, entry);
+          const purchase = getAutoBuyRestockPurchase(section, entry);
+          if (!itemId || !purchase) continue;
+          const restockBucket = snapshot?.[section]?.restock ?? 0;
+          const key2 = forceManual ? `manual:${section}:${itemId}:${restockBucket}` : `${section}:${itemId}:${restockBucket}`;
+          if (purchasedKeys.has(key2)) continue;
+          tasks.push({ key: key2, itemId, section, entry, purchase });
+        }
+      }
+      return tasks;
+    };
+    const executeTasks = async (tasks) => {
+      if (!tasks.length) return [];
+      inFlight = true;
+      try {
+        await sleep4(450);
+        const purchased = [];
+        for (const task of tasks) {
+          let beforeCount = await readAutoBuyRestockPurchaseCount(task.section, task.entry);
+          let afterCount = beforeCount;
+          let boughtQty = 0;
+          for (let attempt = 0; attempt < 40; attempt++) {
+            try {
+              await task.purchase();
+            } catch {
+            }
+            await sleep4(250);
+            afterCount = await readAutoBuyRestockPurchaseCount(task.section, task.entry);
+            const progressed = beforeCount == null || afterCount == null ? attempt === 0 : afterCount > beforeCount;
+            if (progressed) {
+              boughtQty += beforeCount != null && afterCount != null ? Math.max(1, afterCount - beforeCount) : 1;
+              beforeCount = afterCount;
+              await sleep4(120);
+              continue;
+            }
+            if (attempt === 0) {
+              await sleep4(500);
+              continue;
+            }
+            break;
+          }
+          purchasedKeys.set(task.key, Date.now());
+          if (boughtQty > 0) {
+            purchased.push({ itemId: task.itemId, qty: boughtQty });
+          }
+          await sleep4(120);
+        }
+        emitAutoBuyRestockUpdate({ purchased, status: purchased.length ? `Bought: ${summarizeAutoBuyRestockPurchased(purchased)}` : "No matching items bought." });
+        return purchased;
+      } finally {
+        inFlight = false;
       }
     };
     return {
@@ -13508,52 +13649,43 @@
         started = true;
         try {
           await NotifierService.onShopsChangeNow(async (shops) => {
-            lastSnapshot = lastSnapshot || summarizeAutoBuyRestockSnapshot(shops);
+            const nextSnapshot = captureAutoBuyRestockSnapshot(shops);
+            const prevSnapshot = lastSnapshot;
+            lastSnapshot = nextSnapshot;
+            if (!prevSnapshot) return;
             if (!readAutoBuyRestockEnabled(false) || inFlight) {
-              lastSnapshot = summarizeAutoBuyRestockSnapshot(shops);
               return;
             }
             const filters = readAutoBuyRestockFilters();
             if (!filters.length) {
-              lastSnapshot = summarizeAutoBuyRestockSnapshot(shops);
               return;
             }
-            const nextSnapshot = summarizeAutoBuyRestockSnapshot(shops);
-            if (nextSnapshot === lastSnapshot) return;
-            lastSnapshot = nextSnapshot;
+            const triggeredSections = getAutoBuyRestockTriggeredSections(prevSnapshot, nextSnapshot);
+            if (!triggeredSections.length) return;
             purgePurchasedKeys();
-            const tasks = [];
-            for (const section of ["seed", "egg", "tool", "decor"]) {
-              const inventory = Array.isArray(shops?.[section]?.inventory) ? shops[section].inventory : [];
-              for (const entry of inventory) {
-                if (!doesAutoBuyRestockEntryMatch(section, entry, filters)) continue;
-                const itemId = getAutoBuyRestockItemId(section, entry);
-                const purchase = getAutoBuyRestockPurchase(section, entry);
-                if (!itemId || !purchase) continue;
-                const restockBucket = Math.max(0, Math.floor(Number(shops?.[section]?.secondsUntilRestock) || 0));
-                const key2 = `${section}:${itemId}:${restockBucket}`;
-                if (purchasedKeys.has(key2)) continue;
-                tasks.push({ key: key2, itemId, purchase });
-              }
-            }
+            const tasks = buildTasks(shops, nextSnapshot, triggeredSections, filters, false);
             if (!tasks.length) return;
-            inFlight = true;
-            try {
-              for (const task of tasks) {
-                purchasedKeys.set(task.key, Date.now());
-                try {
-                  await task.purchase();
-                } catch {
-                }
-                await sleep4(120);
-              }
-              emitAutoBuyRestockUpdate({ purchased: tasks.map((task) => task.itemId) });
-            } finally {
-              inFlight = false;
-            }
+            await executeTasks(tasks);
           });
         } catch {
         }
+      },
+      async runNow() {
+        if (inFlight) return { ok: false, reason: "busy", purchased: [] };
+        const filters = readAutoBuyRestockFilters();
+        if (!filters.length) return { ok: false, reason: "no-filters", purchased: [] };
+        const shops = await readAutoBuyRestockShopsSnapshot();
+        if (!shops) return { ok: false, reason: "no-shops", purchased: [] };
+        purgePurchasedKeys();
+        const snapshot = captureAutoBuyRestockSnapshot(shops);
+        lastSnapshot = snapshot;
+        const tasks = buildTasks(shops, snapshot, ["seed", "egg", "tool", "decor"], filters, true);
+        if (!tasks.length) {
+          emitAutoBuyRestockUpdate({ purchased: [], status: "No matching items in current stock." });
+          return { ok: true, reason: "no-matches", purchased: [] };
+        }
+        const purchased = await executeTasks(tasks);
+        return { ok: true, reason: purchased.length ? "purchased" : "attempted", purchased };
       }
     };
   }
@@ -15626,6 +15758,9 @@
     },
     startAutoBuyRestockController() {
       autoBuyRestockController.start();
+    },
+    runAutoBuyRestockNow() {
+      return autoBuyRestockController.runNow();
     },
     startWeatherProbe() {
       return weatherProbeService.start();
@@ -61751,10 +61886,27 @@ next: ${next}`;
         "Quick view of the active filter list.",
         summary
       );
+      const actions = ui.flexRow({ gap: 6 });
+      actions.style.flexWrap = "wrap";
+      const btnBuyNow = ui.btn("Buy now", { variant: "primary", size: "sm" });
+      actions.append(btnBuyNow);
+      const actionRow = createSettingRow(
+        "Actions",
+        "Run one manual buy pass on the current shop stock.",
+        actions
+      );
       const hint = document.createElement("div");
       hint.style.opacity = "0.8";
       hint.style.fontSize = "12px";
       hint.style.lineHeight = "1.35";
+      const statusPill = createPill("Idle");
+      statusPill.style.maxWidth = "100%";
+      statusPill.style.whiteSpace = "normal";
+      const statusRow = createSettingRow(
+        "Status",
+        "Latest auto-buy result.",
+        statusPill
+      );
       let latestShops = null;
       const staticMeta = buildStaticMeta();
       const getVisualSelectedIds = () => {
@@ -61780,24 +61932,50 @@ next: ${next}`;
           pickerHint.textContent = "Loading current shop inventory...";
           return;
         }
+        const sectionPalettes = {
+          seed: { tint: "rgba(110, 231, 183, 0.16)", border: "rgba(110, 231, 183, 0.3)", glow: "rgba(16, 185, 129, 0.24)" },
+          tool: { tint: "rgba(125, 211, 252, 0.16)", border: "rgba(125, 211, 252, 0.3)", glow: "rgba(14, 165, 233, 0.24)" },
+          egg: { tint: "rgba(196, 181, 253, 0.16)", border: "rgba(196, 181, 253, 0.3)", glow: "rgba(139, 92, 246, 0.24)" },
+          decor: { tint: "rgba(253, 224, 71, 0.16)", border: "rgba(253, 224, 71, 0.3)", glow: "rgba(245, 158, 11, 0.24)" }
+        };
         let rendered = 0;
         for (const section of ["seed", "tool", "egg", "decor"]) {
           const inventory = Array.isArray(shops?.[section]?.inventory) ? shops[section].inventory : [];
           if (!inventory.length) continue;
           rendered += inventory.length;
+          const palette = sectionPalettes[section] ?? sectionPalettes.seed;
           const sectionWrap = applyStyles3(document.createElement("div"), {
             display: "grid",
-            gap: "6px"
+            gap: "10px",
+            padding: "12px",
+            borderRadius: "14px",
+            border: `1px solid ${palette.border}`,
+            background: `linear-gradient(180deg, ${palette.tint} 0%, rgba(11,16,22,0.88) 100%)`,
+            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 24px ${palette.glow}`
+          });
+          const sectionHeader = applyStyles3(document.createElement("div"), {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "8px"
           });
           const sectionTitle = document.createElement("div");
           sectionTitle.textContent = section.charAt(0).toUpperCase() + section.slice(1);
-          sectionTitle.style.fontSize = "12px";
+          sectionTitle.style.fontSize = "12.5px";
           sectionTitle.style.fontWeight = "700";
-          sectionTitle.style.opacity = "0.82";
+          sectionTitle.style.letterSpacing = "0.02em";
+          sectionTitle.style.opacity = "0.92";
+          const sectionCount = createPill(`${inventory.length} item${inventory.length === 1 ? "" : "s"}`);
+          sectionCount.style.marginLeft = "auto";
+          sectionCount.style.fontSize = "10.5px";
+          sectionCount.style.padding = "3px 8px";
+          sectionCount.style.background = "rgba(255,255,255,0.08)";
+          sectionCount.style.border = "1px solid rgba(255,255,255,0.1)";
+          sectionHeader.append(sectionTitle, sectionCount);
           const chips = applyStyles3(document.createElement("div"), {
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "6px"
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: "8px"
           });
           for (const entry of inventory) {
             const itemId = getAutoBuyRestockItemId(section, entry);
@@ -61807,16 +61985,74 @@ next: ${next}`;
             const active = selectedIds.has(itemId);
             const chip = document.createElement("button");
             chip.type = "button";
-            chip.textContent = label2;
             Object.assign(chip.style, {
-              padding: "6px 10px",
-              borderRadius: "999px",
-              border: active ? "1px solid rgba(94,234,212,0.5)" : "1px solid #2b3340",
-              background: active ? "rgba(94,234,212,0.16)" : "#141b22",
-              color: active ? "#b9fff3" : "#dbe7ff",
-              fontSize: "11.5px",
-              cursor: "pointer"
+              display: "grid",
+              gap: "8px",
+              textAlign: "left",
+              minHeight: "74px",
+              padding: "10px 11px",
+              borderRadius: "12px",
+              border: active ? `1px solid ${palette.border}` : "1px solid rgba(255,255,255,0.08)",
+              background: active ? `linear-gradient(180deg, ${palette.tint} 0%, rgba(20,27,34,0.98) 100%)` : "linear-gradient(180deg, rgba(24,31,39,0.98) 0%, rgba(15,20,26,0.98) 100%)",
+              color: active ? "#f4fffd" : "#dbe7ff",
+              cursor: "pointer",
+              boxShadow: active ? `0 0 0 1px ${palette.border} inset, 0 10px 22px ${palette.glow}` : "inset 0 1px 0 rgba(255,255,255,0.03)"
             });
+            const topRow = applyStyles3(document.createElement("div"), {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "8px"
+            });
+            const nameEl = document.createElement("div");
+            nameEl.textContent = label2;
+            Object.assign(nameEl.style, {
+              fontSize: "12px",
+              fontWeight: "700",
+              lineHeight: "1.25"
+            });
+            const stateBadge = document.createElement("span");
+            stateBadge.textContent = active ? "Selected" : "Add";
+            Object.assign(stateBadge.style, {
+              flexShrink: "0",
+              padding: "3px 8px",
+              borderRadius: "999px",
+              border: active ? `1px solid ${palette.border}` : "1px solid rgba(255,255,255,0.08)",
+              background: active ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)",
+              color: active ? "#f0fffb" : "#b6c4d8",
+              fontSize: "10px",
+              fontWeight: "700",
+              letterSpacing: "0.03em",
+              textTransform: "uppercase"
+            });
+            topRow.append(nameEl, stateBadge);
+            const metaRow = applyStyles3(document.createElement("div"), {
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              flexWrap: "wrap"
+            });
+            const typeBadge = document.createElement("span");
+            typeBadge.textContent = section;
+            Object.assign(typeBadge.style, {
+              padding: "2px 7px",
+              borderRadius: "999px",
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "rgba(255,255,255,0.05)",
+              color: "#b6c4d8",
+              fontSize: "10px",
+              fontWeight: "600",
+              textTransform: "capitalize"
+            });
+            metaRow.appendChild(typeBadge);
+            if (meta?.rarity) {
+              const badge = rarityBadge(meta.rarity);
+              badge.style.margin = "0";
+              badge.style.transform = "scale(0.92)";
+              badge.style.transformOrigin = "left center";
+              metaRow.appendChild(badge);
+            }
+            chip.append(topRow, metaRow);
             chip.onclick = () => {
               const nextSelected = getVisualSelectedIds();
               const manualFilters = getManualFilters();
@@ -61827,7 +62063,7 @@ next: ${next}`;
             };
             chips.appendChild(chip);
           }
-          sectionWrap.append(sectionTitle, chips);
+          sectionWrap.append(sectionHeader, chips);
           pickerGrid.appendChild(sectionWrap);
         }
         pickerHint.textContent = rendered ? "Click any item below to toggle it for auto-buy." : "No shop items available yet.";
@@ -61838,9 +62074,36 @@ next: ${next}`;
         hint.textContent = filters.length ? "Matching items will be bought once when the shop inventory changes or restocks." : "Add one or more item names first, for example cactus or carrot.";
         renderPicker();
       };
+      const onAutoBuyUpdate = (event) => {
+        const purchased = Array.isArray(event?.detail?.purchased) ? event.detail.purchased : [];
+        const status = event?.detail?.status;
+        statusPill.textContent = status || (purchased.length ? `Bought: ${summarizeAutoBuyRestockPurchased(purchased)}` : "Updated");
+        syncAutoBuyUi();
+      };
       toggle.addEventListener("change", () => {
         MiscService.writeAutoBuyRestockEnabled(!!toggle.checked);
       });
+      btnBuyNow.onclick = async () => {
+        btnBuyNow.disabled = true;
+        try {
+          const result = await MiscService.runAutoBuyRestockNow();
+          if (!result?.ok) {
+            if (result?.reason === "no-filters") await toastSimple("Auto buy on restock", "Add at least one filter first.", "error");
+            else if (result?.reason === "busy") await toastSimple("Auto buy on restock", "A buy pass is already running.", "info");
+            else await toastSimple("Auto buy on restock", "Current shop data is not ready yet.", "error");
+            return;
+          }
+          if (Array.isArray(result.purchased) && result.purchased.length) {
+            await toastSimple("Auto buy on restock", `Bought ${countAutoBuyRestockPurchased(result.purchased)} item(s): ${summarizeAutoBuyRestockPurchased(result.purchased)}.`, "success");
+          } else {
+            await toastSimple("Auto buy on restock", "No matching items were bought from the current stock.", "info");
+          }
+        } catch {
+          await toastSimple("Auto buy on restock", "Manual buy pass failed.", "error");
+        } finally {
+          btnBuyNow.disabled = false;
+        }
+      };
       const persistFilters = () => {
         const normalized = MiscService.writeAutoBuyRestockFilters([...Array.from(getVisualSelectedIds()), ...normalizeAutoBuyRestockFilters(filterInput.value)]);
         filterInput.value = MiscService.formatAutoBuyRestockFilters(normalized.filter((entry) => !/^(Seed|Egg|Tool|Decor):/i.test(entry)));
@@ -61856,11 +62119,11 @@ next: ${next}`;
         unsubShops = typeof unsub === "function" ? unsub : null;
       }).catch(() => {
       });
-      window.addEventListener(AUTO_BUY_RESTOCK_UPDATE_EVENT, syncAutoBuyUi);
+      window.addEventListener(AUTO_BUY_RESTOCK_UPDATE_EVENT, onAutoBuyUpdate);
       syncAutoBuyUi();
-      card2.body.append(toggleRow.row, pickerRow.row, filterRow.row, summaryRow.row, hint);
+      card2.body.append(toggleRow.row, pickerRow.row, filterRow.row, summaryRow.row, actionRow.row, statusRow.row, hint);
       card2.root.__cleanup__ = () => {
-        window.removeEventListener(AUTO_BUY_RESTOCK_UPDATE_EVENT, syncAutoBuyUi);
+        window.removeEventListener(AUTO_BUY_RESTOCK_UPDATE_EVENT, onAutoBuyUpdate);
         try {
           unsubShops?.();
         } catch {
@@ -65659,7 +65922,4 @@ next: ${next}`;
     initializeStreamsWhenReady();
   })();
 })();
-
-
-
 
