@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Arie's Mod Custom Share
 // @namespace    Quinoa
-// @version      10.0.4
+// @version      10.0.5
 // @match        https://1227719606223765687.discordsays.com/*
 // @match        https://magiccircle.gg/r/*
 // @match        https://magicgarden.gg/r/*
@@ -65954,6 +65954,7 @@ next: ${next}`;
     initializeStreamsWhenReady();
   })();
 })();
+
 
 
 
