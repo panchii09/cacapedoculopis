@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Arie's Mod Custom Share
 // @namespace    Quinoa
-// @version      10.0.8
+// @version      10.0.9
 // @match        https://1227719606223765687.discordsays.com/*
 // @match        https://magiccircle.gg/r/*
 // @match        https://magicgarden.gg/r/*
@@ -50524,6 +50524,11 @@
       registry2.push({ id, title, render: render2 });
       addLaunchItem(id, title, render2);
     }
+    function openInfosFromStatus() {
+      const entry = registry2.find((item) => item.id === "settings-infos" || item.title === "Infos");
+      if (!entry) return;
+      toggleWindow(entry.id, entry.title, entry.render);
+    }
     function addLaunchItem(id, title, render2) {
       const item = document.createElement("div");
       item.className = "launch-item";
@@ -50567,6 +50572,14 @@
       const localVersion = getLocalVersion();
       setBadge(localVersion || "Unknown", localVersion ? "ok" : "warn");
     })();
+    sFull.style.cursor = "pointer";
+    sMini.style.cursor = "pointer";
+    sFull.addEventListener("click", () => {
+      openInfosFromStatus();
+    });
+    sMini.addEventListener("click", () => {
+      openInfosFromStatus();
+    });
     (async () => {
       try {
         await ensureStore();
