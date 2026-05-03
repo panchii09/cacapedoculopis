@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Arie's Mod Custom Share
 // @namespace    Quinoa
-// @version      10.0.0
+// @version      10.0.1
 // @match        https://1227719606223765687.discordsays.com/*
 // @match        https://magiccircle.gg/r/*
 // @match        https://magicgarden.gg/r/*
@@ -49871,73 +49871,11 @@
         sVersion.textContent = text;
         tag(sVersion, cls);
       };
-      const setDownloadTarget = (url) => {
-        if (url) {
-          sVersion.dataset.download = url;
-          sVersion.style.cursor = "pointer";
-          sVersion.title = `Download the new version`;
-        } else {
-          delete sVersion.dataset.download;
-          sVersion.style.removeProperty("cursor");
-          sVersion.removeAttribute("title");
-        }
-      };
-      setBadge("checking\u2026", "warn");
-      setDownloadTarget(null);
-      const openDownloadLink = (url) => {
-        const shouldUseGM = isDiscordSurface();
-        const gmObject = globalThis.GM;
-        const gmOpen = typeof GM_openInTab === "function" ? GM_openInTab : typeof gmObject?.openInTab === "function" ? gmObject.openInTab.bind(gmObject) : null;
-        if (shouldUseGM && gmOpen) {
-          try {
-            gmOpen(url, { active: true, setParent: true });
-            return;
-          } catch (error) {
-            console.warn("[MagicGarden] GM_openInTab failed, falling back to window.open", error);
-          }
-        }
-        window.open(url, "_blank", "noopener,noreferrer");
-      };
-      sVersion.addEventListener("click", () => {
-        const url = sVersion.dataset.download;
-        if (url) {
-          openDownloadLink(url);
-        }
-      });
-      (async () => {
-        const localVersion = getLocalVersion();
-        try {
-          const remoteData = await fetchRemoteVersion();
-          const remoteVersion = remoteData?.version?.trim();
-          if (!remoteVersion) {
-            if (localVersion) {
-              setBadge(localVersion, "warn");
-            } else {
-              setBadge("version inconnue", "warn");
-            }
-            return;
-          }
-          if (!localVersion) {
-            setBadge(remoteVersion, "warn");
-            setDownloadTarget(remoteData?.download || null);
-            return;
-          }
-          if (localVersion === remoteVersion) {
-            setBadge(localVersion, "ok");
-            setDownloadTarget(null);
-            return;
-          }
-          setBadge(`${localVersion} \u2192 ${remoteVersion}`, "warn");
-          setDownloadTarget(remoteData?.download || null);
-        } catch (error) {
-          console.error("[MagicGarden] Failed to check version:", error);
-          if (localVersion) {
-            setBadge(localVersion, "warn");
-          } else {
-            setBadge("Unknown", "warn");
-          }
-        }
-      })();
+      delete sVersion.dataset.download;
+      sVersion.style.removeProperty("cursor");
+      sVersion.removeAttribute("title");
+      const localVersion = getLocalVersion();
+      setBadge(localVersion || "Unknown", localVersion ? "ok" : "warn");
     })();
     (async () => {
       try {
@@ -65721,6 +65659,7 @@ next: ${next}`;
     initializeStreamsWhenReady();
   })();
 })();
+
 
 
 
