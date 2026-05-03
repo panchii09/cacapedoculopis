@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Arie's Mod Custom Share
 // @namespace    Quinoa
-// @version      10.0.7
+// @version      10.0.8
 // @match        https://1227719606223765687.discordsays.com/*
 // @match        https://magiccircle.gg/r/*
 // @match        https://magicgarden.gg/r/*
@@ -32892,6 +32892,56 @@
     }
     return void 0;
   }
+  function parseComparableVersion(version) {
+    const raw = typeof version === "string" ? version.trim() : "";
+    if (!raw) return [];
+    return raw.split(/[^0-9]+/).filter(Boolean).map((part) => Number(part)).filter((part) => Number.isFinite(part));
+  }
+  function compareVersions(a, b) {
+    const va = parseComparableVersion(a);
+    const vb = parseComparableVersion(b);
+    const len = Math.max(va.length, vb.length);
+    for (let i = 0; i < len; i++) {
+      const aa = va[i] ?? 0;
+      const bb = vb[i] ?? 0;
+      if (aa > bb) return 1;
+      if (aa < bb) return -1;
+    }
+    return 0;
+  }
+  function extractUserscriptVersion(source) {
+    const text = typeof source === "string" ? source : "";
+    const match = text.match(/^\s*\/\/\s*@version\s+([^\r\n]+)/m);
+    return match?.[1]?.trim() || null;
+  }
+  function requestText(url) {
+    return new Promise((resolve2, reject) => {
+      try {
+        if (typeof GM_xmlhttpRequest === "function") {
+          GM_xmlhttpRequest({
+            method: "GET",
+            url,
+            nocache: true,
+            headers: { "Cache-Control": "no-cache" },
+            onload: (response) => resolve2(String(response?.responseText ?? "")),
+            onerror: (error) => reject(error),
+            ontimeout: () => reject(new Error("Request timed out"))
+          });
+          return;
+        }
+      } catch {
+      }
+      fetch(url, { cache: "no-store" }).then((response) => response.text()).then(resolve2).catch(reject);
+    });
+  }
+  async function fetchRemoteUserscriptVersion(url) {
+    try {
+      const text = await requestText(`${url}${url.includes("?") ? "&" : "?"}meta=${Date.now()}`);
+      return extractUserscriptVersion(text);
+    } catch {
+      return null;
+    }
+  }
 
   // src/ariesModAPI/endpoints/state.ts
   function clampPlayers(n) {
@@ -63892,8 +63942,20 @@ next: ${next}`;
     updateBtn.style.fontWeight = "700";
     updateBtn.style.cursor = "pointer";
     updateBtn.style.letterSpacing = "0.03em";
+    const updateHint = document.createElement("div");
+    updateHint.style.fontSize = "11px";
+    updateHint.style.color = "rgba(231,238,247,0.55)";
+    updateHint.style.textAlign = "center";
+    updateHint.textContent = "Checking for updates...";
     updateBtn.addEventListener("click", () => {
       const url = `${customUpdateUrl}?t=${Date.now()}`;
+      try {
+        if (typeof window !== "undefined" && window.location) {
+          window.location.href = url;
+          return;
+        }
+      } catch {
+      }
       try {
         if (typeof GM_openInTab === "function") {
           GM_openInTab(url, { active: true, insert: true, setParent: true });
@@ -63902,7 +63964,7 @@ next: ${next}`;
       } catch {
       }
       try {
-        window.open(url, "_blank", "noopener,noreferrer");
+        window.open(url, "_self");
       } catch {
       }
     });
@@ -63917,8 +63979,28 @@ next: ${next}`;
     headerSub.style.color = "rgba(231,238,247,0.45)";
     headerSub.style.marginTop = "2px";
     versionRow.append(versionBadge, updateBtn);
-    header.append(headerTitle, versionRow, headerSub);
+    header.append(headerTitle, versionRow, updateHint, headerSub);
     view.appendChild(header);
+    void (async () => {
+      const remoteVersion = await fetchRemoteUserscriptVersion(customUpdateUrl);
+      if (!remoteVersion) {
+        updateBtn.textContent = "Update";
+        updateHint.textContent = "Unable to check remote version right now.";
+        return;
+      }
+      const cmp = compareVersions(remoteVersion, resolvedModVersion);
+      if (cmp > 0) {
+        updateBtn.textContent = `Update to ${remoteVersion}`;
+        updateBtn.style.background = "rgba(250,204,21,0.16)";
+        updateBtn.style.borderColor = "rgba(250,204,21,0.38)";
+        updateBtn.style.color = "#fff4bf";
+        updateHint.textContent = `New version available: ${resolvedModVersion} -> ${remoteVersion}`;
+        updateHint.style.color = "#facc15";
+      } else {
+        updateBtn.textContent = "Up to date";
+        updateHint.textContent = `Current version: ${resolvedModVersion}`;
+      }
+    })();
     const sep = document.createElement("div");
     sep.style.height = "1px";
     sep.style.background = "rgba(255,255,255,0.07)";
