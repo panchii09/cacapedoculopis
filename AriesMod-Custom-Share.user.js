@@ -1,7 +1,7 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name         Arie's Mod Custom Share
 // @namespace    Quinoa
-// @version      3.1.430-custom
+// @version      3.1
 // @match        https://1227719606223765687.discordsays.com/*
 // @match        https://magiccircle.gg/r/*
 // @match        https://magicgarden.gg/r/*
@@ -2241,7 +2241,7 @@
       if (!word.match(/\w/) || irregularEmoticons.has(word)) {
         return word.toLowerCase();
       }
-      return word.replace(/[)(:,]/g, "").replace(/’/g, "'").toLowerCase();
+      return word.replace(/[)(:,]/g, "").replace(/â€™/g, "'").toLowerCase();
     }).filter(Boolean);
   }
   function normalizeTokens(str) {
@@ -3271,7 +3271,7 @@
         false,
         /* prefix */
         "fav"
-      )}</div><button data-ref="baselineEmoji" aria-hidden="true" tabindex="-1" class="abs-pos hidden emoji baseline-emoji">😀</button></section>`;
+      )}</div><button data-ref="baselineEmoji" aria-hidden="true" tabindex="-1" class="abs-pos hidden emoji baseline-emoji">ðŸ˜€</button></section>`;
     };
     const rootDom = section();
     const forElementWithAttribute = (attributeName, callback) => {
@@ -5906,12 +5906,12 @@
     return null;
   }
   var MUTATION_ICONS = {
-    // Ground-level icons (anchor.y ≈ 0.5 — drawn at plant base)
+    // Ground-level icons (anchor.y â‰ˆ 0.5 â€” drawn at plant base)
     Wet: { url: `${API_BASE}/assets/sprites/mutations/Wet.png`, anchor: { x: 0.5, y: 0.487 } },
     Chilled: { url: `${API_BASE}/assets/sprites/mutations/Chilled.png`, anchor: { x: 0.502, y: 0.543 } },
     Frozen: { url: `${API_BASE}/assets/sprites/mutations/Frozen.png`, anchor: { x: 0.5, y: 0.474 } },
     Thunderstruck: { url: `${API_BASE}/assets/sprites/mutations/Thunderstruck.png`, anchor: { x: 0.495, y: 0.525 } },
-    // Floating icons (anchor.y ≈ 0.8 — drawn above the plant)
+    // Floating icons (anchor.y â‰ˆ 0.8 â€” drawn above the plant)
     Dawnlit: { url: `${API_BASE}/assets/sprites/mutations/Dawnlit.png`, anchor: { x: 0.506, y: 0.809 } },
     Ambershine: { url: `${API_BASE}/assets/sprites/mutations/Amberlit.png`, anchor: { x: 0.5, y: 0.82 } },
     Dawncharged: { url: `${API_BASE}/assets/sprites/mutations/Dawncharged.png`, anchor: { x: 0.519, y: 0.796 } },
@@ -7470,7 +7470,7 @@
     Watermelon: "sprite/seed/Watermelon"
   };
   var tileRefsItems = {
-    // UI / système (pas dans V.Item)
+    // UI / systÃ¨me (pas dans V.Item)
     Coin: 1,
     InventoryBag: 7,
     MoneyBag: 11,
@@ -7530,7 +7530,7 @@
     WhiteCaribou: "sprite/pet/WhiteCaribou",
     WinterEgg: "sprite/pet/WinterEgg",
     Worm: "sprite/pet/Worm",
-    // Pas dans V.Pet (garder pour compatibilité)
+    // Pas dans V.Pet (garder pour compatibilitÃ©)
     DivineEgg: 16,
     CelestialEgg: 17
   };
@@ -9619,7 +9619,7 @@
       baseProbability: 21,
       baseParameters: { eggGrowthTimeReductionMinutes: 7 }
     },
-    // utilisé par la dinde: EggGrowthBoostII_NEW
+    // utilisÃ© par la dinde: EggGrowthBoostII_NEW
     EggGrowthBoostII_NEW: {
       name: "Egg Growth Boost II",
       description: "Reduces the time for eggs to hatch",
@@ -9627,7 +9627,7 @@
       baseProbability: 24,
       baseParameters: { eggGrowthTimeReductionMinutes: 9 }
     },
-    // ancien EggGrowthBoostIII remplacé par ce bloc
+    // ancien EggGrowthBoostIII remplacÃ© par ce bloc
     EggGrowthBoostII: {
       name: "Egg Growth Boost III",
       description: "Reduces the time for eggs to hatch",
@@ -10251,7 +10251,7 @@
       isOneTimePurchase: false,
       nudgeY: -0.3
     },
-    // Spéciaux
+    // SpÃ©ciaux
     MiniFairyCottage: {
       tileRef: tileRefsDecor.MiniFairyCottage,
       name: "Mini Fairy Cottage",
@@ -10515,7 +10515,7 @@
       type: "weather",
       cycle: { kind: "weather", startWindowMin: 20, startWindowMax: 35, durationMinutes: 5 },
       weightInCycle: 0.75,
-      // 75% des events météo
+      // 75% des events mÃ©tÃ©o
       appliesRandomCropPercent: 30,
       // ~30% des cultures applicables
       conditions: { requiresMature: true, requiresNoExistingModifier: true },
@@ -10537,7 +10537,7 @@
       displayName: "Snow",
       cycle: { kind: "weather", startWindowMin: 20, startWindowMax: 35, durationMinutes: 5 },
       weightInCycle: 0.25,
-      // 25% des events météo
+      // 25% des events mÃ©tÃ©o
       appliesRandomCropPercent: 30,
       conditions: { requiresMature: true, requiresNoExistingModifier: true },
       mutations: [
@@ -10716,7 +10716,7 @@
     }
     return out;
   };
-  var normalizeSpeciesKey = (value) => value.toLowerCase().replace(/['’`]/g, "").replace(/\s+/g, "").replace(/-/g, "").replace(/(seed|plant|baby|fruit|crop)$/i, "");
+  var normalizeSpeciesKey = (value) => value.toLowerCase().replace(/['â€™`]/g, "").replace(/\s+/g, "").replace(/-/g, "").replace(/(seed|plant|baby|fruit|crop)$/i, "");
   var MAX_SCALE_BY_SPECIES = (() => {
     const map2 = /* @__PURE__ */ new Map();
     const register = (key2, value) => {
@@ -12420,7 +12420,7 @@
     return { added, updated, removed, changes };
   }
   var PlayerService = {
-    /* ------------------------- Position / Déplacement ------------------------- */
+    /* ------------------------- Position / DÃ©placement ------------------------- */
     getPosition() {
       return Atoms.player.position.get();
     },
@@ -13757,7 +13757,7 @@
     const width = normalized.x2 - normalized.x1 + 1;
     const height = normalized.y2 - normalized.y1 + 1;
     const tiles = normalized.localIndices.length;
-    return `(${normalized.x1},${normalized.y1}) -> (${normalized.x2},${normalized.y2}) · ${width}x${height} · ${tiles} tiles`;
+    return `(${normalized.x1},${normalized.y1}) -> (${normalized.x2},${normalized.y2}) Â· ${width}x${height} Â· ${tiles} tiles`;
   }
   function setAutoHarvestZone(zone) {
     const normalized = normalizeAutoHarvestZone(zone);
@@ -15788,12 +15788,12 @@
       // remapper
       __publicField(this, "enabled", true);
       __publicField(this, "map", /* @__PURE__ */ new Map());
-      // combo normalisé -> spec destination
+      // combo normalisÃ© -> spec destination
       __publicField(this, "blockedSet", /* @__PURE__ */ new Set());
-      // combos bloqués
+      // combos bloquÃ©s
       __publicField(this, "eventBlockers", /* @__PURE__ */ new Set());
       __publicField(this, "attachedDocs", /* @__PURE__ */ new WeakSet());
-      // docs déjà hookés
+      // docs dÃ©jÃ  hookÃ©s
       __publicField(this, "observers", []);
       __publicField(this, "handlers", /* @__PURE__ */ new Map());
       __publicField(this, "passthrough", /* @__PURE__ */ new Set(["F5", "F12"]));
@@ -15869,14 +15869,14 @@
       };
     }
     /* --------- helpers de binding --------- */
-    /** Déplace l’action bindée sur oldBase vers newPhysical et désactive oldBase. */
+    /** DÃ©place lâ€™action bindÃ©e sur oldBase vers newPhysical et dÃ©sactive oldBase. */
     replace(oldBase, newPhysical) {
       const oldN = normalizeCombo(oldBase);
       const newN = normalizeCombo(newPhysical);
       this.blockedSet.add(oldN);
       this.map.set(newN, parseCombo(oldN));
     }
-    /** Échange réciproquement deux touches (ne bloque pas). */
+    /** Ã‰change rÃ©ciproquement deux touches (ne bloque pas). */
     swap(a, b) {
       const an = normalizeCombo(a), bn = normalizeCombo(b);
       this.map.set(an, parseCombo(bn));
@@ -16174,7 +16174,7 @@
   var Menu = class {
     constructor(opts = {}) {
       this.opts = opts;
-      // NOTE: je rends root public pour pouvoir faire ui.root.appendChild(...) côté menus
+      // NOTE: je rends root public pour pouvoir faire ui.root.appendChild(...) cÃ´tÃ© menus
       __publicField(this, "root");
       __publicField(this, "tabBar");
       __publicField(this, "views");
@@ -16237,7 +16237,7 @@
       if (this.opts.startWindowHidden) this.setWindowVisible(false);
       this.emit("mounted");
     }
-    /** Démonte le menu (optionnel) */
+    /** DÃ©monte le menu (optionnel) */
     unmount() {
       this.root?.removeEventListener("pointerenter", this._onEnter);
       this.root?.removeEventListener("pointerleave", this._onLeave);
@@ -16248,20 +16248,20 @@
       if (this.root?.parentElement) this.root.parentElement.removeChild(this.root);
       this.emit("unmounted");
     }
-    /** Retourne l'élément fenêtre englobant (barre – / ×) */
+    /** Retourne l'Ã©lÃ©ment fenÃªtre englobant (barre â€“ / Ã—) */
     getWindowEl() {
       if (!this.root) return null;
       const sel = this.opts.windowSelector || ".qws-win";
       return this.root.closest(sel);
     }
-    /** Affiche/masque la FENÊTRE (barre incluse) */
+    /** Affiche/masque la FENÃŠTRE (barre incluse) */
     setWindowVisible(visible) {
       const win = this.getWindowEl();
       if (!win) return;
       win.classList.toggle("is-hidden", !visible);
       this.emit(visible ? "window:show" : "window:hide");
     }
-    /** Bascule l’état de la fenêtre. Retourne true si maintenant visible. */
+    /** Bascule lâ€™Ã©tat de la fenÃªtre. Retourne true si maintenant visible. */
     toggleWindow() {
       const win = this.getWindowEl();
       if (!win) return false;
@@ -16269,7 +16269,7 @@
       this.setWindowVisible(willShow);
       return willShow;
     }
-    /** Donne l’état courant de la fenêtre (true = visible) */
+    /** Donne lâ€™Ã©tat courant de la fenÃªtre (true = visible) */
     isWindowVisible() {
       const win = this.getWindowEl();
       if (!win) return true;
@@ -16287,7 +16287,7 @@
       this.setVisible(v);
       return v;
     }
-    /** Ajoute un onglet (peut être appelé avant ou après mount) */
+    /** Ajoute un onglet (peut Ãªtre appelÃ© avant ou aprÃ¨s mount) */
     addTab(id, title, render2) {
       this.tabs.set(id, { title, render: render2, badge: null });
       if (this.root) {
@@ -16301,7 +16301,7 @@
       defs.forEach((d) => this.addTab(d.id, d.title, d.render));
       return this;
     }
-    /** Met à jour le titre de l’onglet (ex: compteur, libellé) */
+    /** Met Ã  jour le titre de lâ€™onglet (ex: compteur, libellÃ©) */
     setTabTitle(id, title) {
       const def = this.tabs.get(id);
       if (!def) return;
@@ -16311,7 +16311,7 @@
         if (label2) label2.textContent = title;
       }
     }
-    /** Ajoute/retire un badge à droite du titre (ex: “3”, “NEW”, “!”) */
+    /** Ajoute/retire un badge Ã  droite du titre (ex: â€œ3â€, â€œNEWâ€, â€œ!â€) */
     setTabBadge(id, text) {
       const def = this.tabs.get(id);
       if (!def || !def.btn) return;
@@ -16327,7 +16327,7 @@
         def.badge.style.display = "";
       }
     }
-    /** Force le re-render d’un onglet (ré-exécute son render) */
+    /** Force le re-render dâ€™un onglet (rÃ©-exÃ©cute son render) */
     refreshTab(id) {
       const def = this.tabs.get(id);
       if (!def?.view) return;
@@ -16381,7 +16381,7 @@
       if (!this.root) return;
       this.root.classList.toggle("qmm-alt-drag", this._altDown && this._hovering);
     }
-    /** Récupère la vue DOM d’un onglet (pratique pour updates ciblées) */
+    /** RÃ©cupÃ¨re la vue DOM dâ€™un onglet (pratique pour updates ciblÃ©es) */
     getTabView(id) {
       return this.tabs.get(id)?.view ?? null;
     }
@@ -16407,7 +16407,7 @@
       this.persistActive();
       this.emit("tab:change", id);
     }
-    /** Événements */
+    /** Ã‰vÃ©nements */
     on(event, handler) {
       if (!this.events.has(event)) this.events.set(event, /* @__PURE__ */ new Set());
       this.events.get(event).add(handler);
@@ -16424,7 +16424,7 @@
         }
       });
     }
-    // ---------- Helpers UI publics (réutilisables dans tes tabs) ----------
+    // ---------- Helpers UI publics (rÃ©utilisables dans tes tabs) ----------
     btn(label2, onClickOrOpts) {
       const opts = typeof onClickOrOpts === "function" ? { onClick: onClickOrOpts } : { ...onClickOrOpts || {} };
       const b = el("button", "qmm-btn");
@@ -16818,7 +16818,7 @@
       i.classList.add("qmm-switch");
       return i;
     }
-    // Helpers “tableau simple” pour lister les items
+    // Helpers â€œtableau simpleâ€ pour lister les items
     table(headers, opts) {
       const wrap = document.createElement("div");
       wrap.className = "qmm-table-wrap";
@@ -17049,7 +17049,7 @@
       } };
     }
     /* -------------------------- split2 helper -------------------------- */
-    /** Crée un layout 2 colonnes (gauche/droite) en CSS Grid.
+    /** CrÃ©e un layout 2 colonnes (gauche/droite) en CSS Grid.
      *  leftWidth: ex "200px" | "18rem" | "minmax(160px, 30%)" */
     split2(leftWidth = "260px") {
       const root = el("div", "qmm-split");
@@ -17061,7 +17061,7 @@
       return { root, left, right };
     }
     /* -------------------------- VTabs factory -------------------------- */
-    /** Crée des “tabs verticaux” génériques (liste sélectionnable + filtre). */
+    /** CrÃ©e des â€œtabs verticauxâ€ gÃ©nÃ©riques (liste sÃ©lectionnable + filtre). */
     vtabs(options = {}) {
       return new VTabs(this, options);
     }
@@ -19292,7 +19292,7 @@
         return 1;
       }
     }
-    // 0.001 est considéré comme un vrai mute (→ 0)
+    // 0.001 est considÃ©rÃ© comme un vrai mute (â†’ 0)
     finalVolumeObj() {
       let raw = this.readAtomRaw();
       if (raw == null) raw = this.max;
@@ -19412,12 +19412,12 @@
     undefineGroup(name) {
       this.groupsMap.delete(this.toKey(name));
     }
-    // --- Unique implémentation publique ---
+    // --- Unique implÃ©mentation publique ---
     autoGroups({ overwrite = false, minVariants = this.minVariantsPerAutoGroup } = {}) {
       this.rebuildAutoGroups(overwrite, minVariants);
       return this.groups();
     }
-    // Helper privé appelé par autoGroups()
+    // Helper privÃ© appelÃ© par autoGroups()
     rebuildAutoGroups(overwrite, minVariants) {
       const tmp = /* @__PURE__ */ new Map();
       for (const [url, m] of this.meta.entries()) {
@@ -19453,15 +19453,15 @@
       }
       return null;
     }
-    /** Volume calculé selon config + atom du jeu. */
+    /** Volume calculÃ© selon config + atom du jeu. */
     getGameSfxVolume() {
       return this.finalVolumeObj();
     }
-    /** Ajoute un offset global (sans toucher à l’atom du jeu). */
+    /** Ajoute un offset global (sans toucher Ã  lâ€™atom du jeu). */
     setGainFactor(g = 1) {
       this.gainFactor = +g || 1;
     }
-    /** Permet d’adapter la clé et la plage de l’atom si ça change côté jeu. */
+    /** Permet dâ€™adapter la clÃ© et la plage de lâ€™atom si Ã§a change cÃ´tÃ© jeu. */
     setAtomConfig(key2 = "soundEffectsVolumeAtom", min = 1e-3, max = 0.2000000000000001) {
       this.atomKey = key2;
       this.min = min;
@@ -19512,7 +19512,7 @@
       }
       return this.playBy(nameOrRegex);
     }
-    /** Joue une entrée d’un groupe (index fixe, ou aléatoire). */
+    /** Joue une entrÃ©e dâ€™un groupe (index fixe, ou alÃ©atoire). */
     playGroup(name, opts = {}) {
       const { index, random = true, filter } = opts;
       let list = this.getGroup(name);
@@ -19527,7 +19527,7 @@
       const url = typeof index === "number" ? list[(index % list.length + list.length) % list.length] : random ? this.choose(list) : list[0];
       return this.playUrl(url);
     }
-    /** Alias pratique pour jouer une variation aléatoire d’un groupe (ex: "harvest"). */
+    /** Alias pratique pour jouer une variation alÃ©atoire dâ€™un groupe (ex: "harvest"). */
     playRandom(name) {
       return this.playGroup(name, { random: true });
     }
@@ -19553,7 +19553,7 @@
     exportJSON() {
       return JSON.stringify({ urls: this.info(), groups: this.groups() }, null, 2);
     }
-    /** Scan public de commodité. */
+    /** Scan public de commoditÃ©. */
     async scan() {
       return this.scanAll();
     }
@@ -19573,7 +19573,7 @@
     playDestroyStone() {
       return this.playBy("Break_Stone");
     }
-    /** Joue une URL à un volume fixe (0-1), indépendamment du volume SFX du jeu. */
+    /** Joue une URL Ã  un volume fixe (0-1), indÃ©pendamment du volume SFX du jeu. */
     playAt(url, volume) {
       const clampedVol = Math.max(0, Math.min(1, volume));
       try {
@@ -19841,7 +19841,7 @@
     return true;
   }
   var tos = {
-    /** À appeler une fois dans le main, le plus tôt possible */
+    /** Ã€ appeler une fois dans le main, le plus tÃ´t possible */
     init() {
       tryCaptureFromKnownGlobals();
       armCapture();
@@ -19877,7 +19877,7 @@
         tileObject: tv?.tileObject
       };
     },
-    /** Met la tile à vide (tileObject = null) */
+    /** Met la tile Ã  vide (tileObject = null) */
     setTileEmpty(tx, ty, opts = {}) {
       return applyTileObject(Number(tx), Number(ty), null, opts);
     },
@@ -19938,15 +19938,15 @@
       if ("maturedAt" in p) next.maturedAt = Number(p.maturedAt);
       return applyTileObject(Number(tx), Number(ty), next, opts);
     },
-    /** Convertit un événement pointeur en coordonnées de tile (tx, ty) */
+    /** Convertit un Ã©vÃ©nement pointeur en coordonnÃ©es de tile (tx, ty) */
     pointerToTile,
-    /** Écoute les mouvements pointeur sur le canvas et appelle le callback avec les infos de tile */
+    /** Ã‰coute les mouvements pointeur sur le canvas et appelle le callback avec les infos de tile */
     onPointerTile,
-    /** Dessine un contour autour d'une tile donnée */
+    /** Dessine un contour autour d'une tile donnÃ©e */
     highlightTile,
     /** Supprime le contour actif */
     clearHighlight,
-    /** Active/désactive un mode debug qui highlight la tile sous le pointeur en temps réel */
+    /** Active/dÃ©sactive un mode debug qui highlight la tile sous le pointeur en temps rÃ©el */
     setDebugHoverHighlight
   };
 
@@ -22849,7 +22849,7 @@
         tileObject = {
           objectType: "decor",
           decorId: selectedItem.decorId,
-          // rotation depuis lâatom, fallback sur ce quâaurait dÃ©jÃ  lâitem (au cas oÃ¹)
+          // rotation depuis lÃ¢Â€Â™atom, fallback sur ce quÃ¢Â€Â™aurait dÃƒÂ©jÃƒÂ  lÃ¢Â€Â™item (au cas oÃƒÂ¹)
           rotation: typeof rotation === "number" ? rotation : selectedItem.rotation ?? 0
         };
       }
@@ -24228,7 +24228,7 @@
     }
     return null;
   }
-  var normalizeSpeciesKey2 = (value) => value.toLowerCase().replace(/['’`]/g, "").replace(/\s+/g, "").replace(/-/g, "").replace(/(seed|plant|baby|fruit|crop)$/i, "");
+  var normalizeSpeciesKey2 = (value) => value.toLowerCase().replace(/['â€™`]/g, "").replace(/\s+/g, "").replace(/-/g, "").replace(/(seed|plant|baby|fruit|crop)$/i, "");
   var MAX_SCALE_BY_SPECIES2 = (() => {
     const map2 = /* @__PURE__ */ new Map();
     const register = (key2, value) => {
@@ -28832,7 +28832,7 @@
       }
     }
     // =========================
-    // Import / compression ≤ 200 KB
+    // Import / compression â‰¤ 200 KB
     // =========================
     async importFileAsSound(file, opts = {}) {
       const {
@@ -30630,7 +30630,7 @@
       __publicField(this, "purchasesUpdates", 0);
       __publicField(this, "bootArmed", false);
       __publicField(this, "justRestocked", false);
-      // Items à afficher dans l'overlay (déjà filtrés)
+      // Items Ã  afficher dans l'overlay (dÃ©jÃ  filtrÃ©s)
       __publicField(this, "rows", []);
       __publicField(this, "lastPanelSig", null);
       this.slot = this.createSlot();
@@ -31192,13 +31192,13 @@
       style(panel, {
         position: "fixed",
         width: "min(340px, 80vw)",
-        // ← largeur réduite (était 360px)
+        // â† largeur rÃ©duite (Ã©tait 360px)
         maxHeight: "50vh",
         overflow: "auto",
         overscrollBehavior: "contain",
-        // ← empêche le scroll de "remonter" au jeu
+        // â† empÃªche le scroll de "remonter" au jeu
         touchAction: "pan-y",
-        // ← gestes tactiles = scroll vertical, pas zoom/pan global
+        // â† gestes tactiles = scroll vertical, pas zoom/pan global
         borderRadius: "var(--chakra-radii-card, 12px)",
         border: "1px solid var(--qws-border, #ffffff22)",
         background: "var(--qws-panel, #111823cc)",
@@ -46229,7 +46229,7 @@
     "baseSpecies",
     "seedKey"
   ];
-  var normalizeSpeciesKey3 = (value) => value.toLowerCase().replace(/['’`]/g, "").replace(/\s+/g, "").replace(/-/g, "").replace(/(seed|plant|baby|fruit|crop)$/i, "");
+  var normalizeSpeciesKey3 = (value) => value.toLowerCase().replace(/['â€™`]/g, "").replace(/\s+/g, "").replace(/-/g, "").replace(/(seed|plant|baby|fruit|crop)$/i, "");
   var MAX_SCALE_BY_SPECIES3 = (() => {
     const map2 = /* @__PURE__ */ new Map();
     const register = (key2, value) => {
@@ -64685,7 +64685,7 @@ next: ${next}`;
         return 0;
       }
     },
-    /** Ouvre l’aperçu d’inventaire (fake modal) avec garde + toasts. */
+    /** Ouvre lâ€™aperÃ§u dâ€™inventaire (fake modal) avec garde + toasts. */
     async openInventoryPreview(playerId2, playerName) {
       try {
         const inv = await this.getInventory(playerId2);
@@ -65721,3 +65721,4 @@ next: ${next}`;
     initializeStreamsWhenReady();
   })();
 })();
+
