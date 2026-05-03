@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Arie's Mod Custom Share
 // @namespace    Quinoa
-// @version      10.0.3
+// @version      10.0.4
 // @match        https://1227719606223765687.discordsays.com/*
 // @match        https://magiccircle.gg/r/*
 // @match        https://magicgarden.gg/r/*
@@ -62884,6 +62884,7 @@ next: ${next}`;
     const environment = safeWindow ? detectEnvironment() : null;
     const resolvedGameVersion = gameVersion ?? "unknown";
     const resolvedModVersion = getLocalVersion() ?? "unknown";
+    const customUpdateUrl = "https://raw.githubusercontent.com/panchii09/cacapedoculopis/main/AriesMod-Custom-Share.user.js";
     const header = document.createElement("div");
     header.style.display = "flex";
     header.style.flexDirection = "column";
@@ -62908,12 +62909,43 @@ next: ${next}`;
     versionBadge.style.fontSize = "11px";
     versionBadge.style.fontWeight = "600";
     versionBadge.style.letterSpacing = "0.3px";
+    const updateBtn = document.createElement("button");
+    updateBtn.type = "button";
+    updateBtn.textContent = "Update";
+    updateBtn.style.padding = "5px 12px";
+    updateBtn.style.borderRadius = "999px";
+    updateBtn.style.border = "1px solid rgba(94,234,212,0.28)";
+    updateBtn.style.background = "rgba(94,234,212,0.1)";
+    updateBtn.style.color = "#d8fff7";
+    updateBtn.style.fontSize = "11px";
+    updateBtn.style.fontWeight = "700";
+    updateBtn.style.cursor = "pointer";
+    updateBtn.style.letterSpacing = "0.03em";
+    updateBtn.addEventListener("click", () => {
+      try {
+        if (typeof GM_openInTab === "function") {
+          GM_openInTab(customUpdateUrl, { active: true, insert: true, setParent: true });
+          return;
+        }
+      } catch {
+      }
+      try {
+        window.open(customUpdateUrl, "_blank", "noopener,noreferrer");
+      } catch {
+      }
+    });
+    const versionRow = document.createElement("div");
+    versionRow.style.display = "flex";
+    versionRow.style.alignItems = "center";
+    versionRow.style.justifyContent = "center";
+    versionRow.style.gap = "8px";
     const headerSub = document.createElement("div");
     headerSub.textContent = "Browser userscript for MagicGarden";
     headerSub.style.fontSize = "11px";
     headerSub.style.color = "rgba(231,238,247,0.45)";
     headerSub.style.marginTop = "2px";
-    header.append(headerTitle, versionBadge, headerSub);
+    versionRow.append(versionBadge, updateBtn);
+    header.append(headerTitle, versionRow, headerSub);
     view.appendChild(header);
     const sep = document.createElement("div");
     sep.style.height = "1px";
@@ -65922,5 +65954,6 @@ next: ${next}`;
     initializeStreamsWhenReady();
   })();
 })();
+
 
 
