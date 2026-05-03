@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Arie's Mod Custom Share
 // @namespace    Quinoa
-// @version      10.0.9
+// @version      10.1.0
 // @match        https://1227719606223765687.discordsays.com/*
 // @match        https://magiccircle.gg/r/*
 // @match        https://magicgarden.gg/r/*
@@ -50525,7 +50525,7 @@
       addLaunchItem(id, title, render2);
     }
     function openInfosFromStatus() {
-      const entry = registry2.find((item) => item.id === "settings-infos" || item.title === "Infos");
+      const entry = registry2.find((item) => item.id === "settings");
       if (!entry) return;
       toggleWindow(entry.id, entry.title, entry.render);
     }
