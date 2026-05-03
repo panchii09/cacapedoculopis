@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Arie's Mod Custom Share
 // @namespace    Quinoa
-// @version      10.0.6
+// @version      10.0.7
 // @match        https://1227719606223765687.discordsays.com/*
 // @match        https://magiccircle.gg/r/*
 // @match        https://magicgarden.gg/r/*
@@ -12917,8 +12917,17 @@
   var PATH_AUTO_STORE_SEED_SILO_ENABLED = "misc.autoStoreSeedSiloEnabled";
   var PATH_AUTO_STORE_DECOR_SHED_ENABLED = "misc.autoStoreDecorShedEnabled";
   var PATH_AUTO_HARVEST_ZONE_ENABLED = "misc.autoHarvestZoneEnabled";
+  var PATH_AUTO_HARVEST_ZONE_SECONDARY_ENABLED = "misc.autoHarvestZoneSecondaryEnabled";
   var PATH_AUTO_HARVEST_ZONE = "misc.autoHarvestZone";
+  var PATH_AUTO_HARVEST_ZONE_SECONDARY = "misc.autoHarvestZoneSecondary";
   var PATH_AUTO_HARVEST_ZONE_SELL = "misc.autoHarvestZoneSell";
+  var PATH_AUTO_HARVEST_ZONE_SECONDARY_RULES = "misc.autoHarvestZoneSecondaryRules";
+  var PATH_AUTO_HARVEST_ZONE_PRIMARY_REPLANT_ENABLED = "misc.autoHarvestZonePrimaryReplantEnabled";
+  var PATH_AUTO_HARVEST_ZONE_PRIMARY_FILL_EMPTY_ENABLED = "misc.autoHarvestZonePrimaryFillEmptyEnabled";
+  var PATH_AUTO_HARVEST_ZONE_PRIMARY_REPLANT_SPECIES = "misc.autoHarvestZonePrimaryReplantSpecies";
+  var PATH_AUTO_HARVEST_ZONE_SECONDARY_REPLANT_ENABLED = "misc.autoHarvestZoneSecondaryReplantEnabled";
+  var PATH_AUTO_HARVEST_ZONE_SECONDARY_FILL_EMPTY_ENABLED = "misc.autoHarvestZoneSecondaryFillEmptyEnabled";
+  var PATH_AUTO_HARVEST_ZONE_SECONDARY_REPLANT_SPECIES = "misc.autoHarvestZoneSecondaryReplantSpecies";
   var PATH_AUTO_BUY_RESTOCK_ENABLED = "misc.autoBuyRestockEnabled";
   var PATH_AUTO_BUY_RESTOCK_FILTERS = "misc.autoBuyRestockFilters";
   var PATH_WEATHER_PROBE_ENABLED = "misc.weatherProbeEnabled";
@@ -12932,6 +12941,18 @@
   var AUTO_HARVEST_ZONE_SELL_COOLDOWN_MS = 1500;
   var AUTO_HARVEST_ZONE_UPDATE_EVENT = "qws:autoharvestzone:update";
   var AUTO_HARVEST_ZONE_SELECTION_EVENT = "qws:autoharvestzone:selection";
+  var AUTO_HARVEST_ZONE_MUTATION_OPTIONS = [
+    { key: "Gold", label: "Gold" },
+    { key: "Rainbow", label: "Rainbow" },
+    { key: "Wet", label: "Wet" },
+    { key: "Chilled", label: "Chilled" },
+    { key: "Frozen", label: "Frozen" },
+    { key: "Thunderstruck", label: "Thunderstruck" },
+    { key: "Dawnlit", label: "Dawnlit" },
+    { key: "Ambershine", label: "Amberlit" },
+    { key: "Dawncharged", label: "Dawnbound" },
+    { key: "Ambercharged", label: "Amberbound" }
+  ];
   var AUTO_BUY_RESTOCK_UPDATE_EVENT = "qws:autobuyrestock:update";
   var WEATHER_PROBE_UPDATE_EVENT = "qws:weatherprobe:update";
   var WEATHER_PROBE_MAX_LOGS = 120;
@@ -13056,6 +13077,17 @@
       return def;
     }
   }
+  function readAutoHarvestZoneSecondaryEnabled(def = false) {
+    try {
+      const stored = readAriesPath(PATH_AUTO_HARVEST_ZONE_SECONDARY_ENABLED);
+      if (typeof stored === "boolean") return stored;
+      if (stored === "1" || stored === 1) return true;
+      if (stored === "0" || stored === 0) return false;
+      return !!stored;
+    } catch {
+      return def;
+    }
+  }
   function emitAutoHarvestZoneUpdate(detail = {}) {
     try {
       window.dispatchEvent(new CustomEvent(AUTO_HARVEST_ZONE_UPDATE_EVENT, { detail }));
@@ -13153,6 +13185,131 @@
     } catch {
     }
   }
+  function writeAutoHarvestZoneSecondaryEnabled(on) {
+    try {
+      writeAriesPath(PATH_AUTO_HARVEST_ZONE_SECONDARY_ENABLED, !!on);
+      emitAutoHarvestZoneUpdate({ secondaryEnabled: !!on });
+    } catch {
+    }
+  }
+  function getAutoHarvestZoneProfilePaths(profile = "primary") {
+    if (profile === "secondary") {
+      return {
+        replantEnabled: PATH_AUTO_HARVEST_ZONE_SECONDARY_REPLANT_ENABLED,
+        fillEmptyEnabled: PATH_AUTO_HARVEST_ZONE_SECONDARY_FILL_EMPTY_ENABLED,
+        species: PATH_AUTO_HARVEST_ZONE_SECONDARY_REPLANT_SPECIES
+      };
+    }
+    return {
+      replantEnabled: PATH_AUTO_HARVEST_ZONE_PRIMARY_REPLANT_ENABLED,
+      fillEmptyEnabled: PATH_AUTO_HARVEST_ZONE_PRIMARY_FILL_EMPTY_ENABLED,
+      species: PATH_AUTO_HARVEST_ZONE_PRIMARY_REPLANT_SPECIES
+    };
+  }
+  function readAutoHarvestZoneReplantEnabled(profile = "primary", def = false) {
+    try {
+      const stored = readAriesPath(getAutoHarvestZoneProfilePaths(profile).replantEnabled);
+      if (typeof stored === "boolean") return stored;
+      if (stored === "1" || stored === 1) return true;
+      if (stored === "0" || stored === 0) return false;
+      return !!stored;
+    } catch {
+      return def;
+    }
+  }
+  function writeAutoHarvestZoneReplantEnabled(profile = "primary", on) {
+    try {
+      writeAriesPath(getAutoHarvestZoneProfilePaths(profile).replantEnabled, !!on);
+      emitAutoHarvestZoneUpdate({ profile, replantEnabled: !!on });
+    } catch {
+    }
+  }
+  function readAutoHarvestZoneFillEmptyEnabled(profile = "primary", def = false) {
+    try {
+      const stored = readAriesPath(getAutoHarvestZoneProfilePaths(profile).fillEmptyEnabled);
+      if (typeof stored === "boolean") return stored;
+      if (stored === "1" || stored === 1) return true;
+      if (stored === "0" || stored === 0) return false;
+      return !!stored;
+    } catch {
+      return def;
+    }
+  }
+  function writeAutoHarvestZoneFillEmptyEnabled(profile = "primary", on) {
+    try {
+      writeAriesPath(getAutoHarvestZoneProfilePaths(profile).fillEmptyEnabled, !!on);
+      emitAutoHarvestZoneUpdate({ profile, fillEmptyEnabled: !!on });
+    } catch {
+    }
+  }
+  function normalizeAutoHarvestZoneReplantToken(value) {
+    const raw = typeof value === "string" ? value.trim() : "";
+    if (!raw) return null;
+    if (/^Seed:/i.test(raw)) {
+      const species = raw.split(":").slice(1).join(":").trim();
+      return species ? `Seed:${species}` : null;
+    }
+    if (/^Egg:/i.test(raw)) {
+      const eggId = raw.split(":").slice(1).join(":").trim();
+      return eggId ? `Egg:${eggId}` : null;
+    }
+    if (plantCatalog2?.[raw]?.seed) return `Seed:${raw}`;
+    if (eggCatalog2?.[raw]) return `Egg:${raw}`;
+    return `Seed:${raw}`;
+  }
+  function readAutoHarvestZoneReplantSelections(profile = "primary") {
+    try {
+      const stored = readAriesPath(getAutoHarvestZoneProfilePaths(profile).species);
+      const source = Array.isArray(stored) ? stored : stored == null ? [] : [stored];
+      const deduped = [];
+      const seen = new Set();
+      for (const item of source) {
+        const token = normalizeAutoHarvestZoneReplantToken(item);
+        if (!token || seen.has(token)) continue;
+        seen.add(token);
+        deduped.push(token);
+      }
+      return deduped;
+    } catch {
+      return [];
+    }
+  }
+  function writeAutoHarvestZoneReplantSelections(profile = "primary", items) {
+    try {
+      const source = Array.isArray(items) ? items : items == null ? [] : [items];
+      const next = [];
+      const seen = new Set();
+      for (const item of source) {
+        const token = normalizeAutoHarvestZoneReplantToken(item);
+        if (!token || seen.has(token)) continue;
+        seen.add(token);
+        next.push(token);
+      }
+      writeAriesPath(getAutoHarvestZoneProfilePaths(profile).species, next);
+      emitAutoHarvestZoneUpdate({ profile, replantItems: next });
+      return next;
+    } catch {
+      return [];
+    }
+  }
+  function readAutoHarvestZoneReplantSpecies(profile = "primary") {
+    try {
+      const firstSeed = readAutoHarvestZoneReplantSelections(profile).find((entry) => entry.startsWith("Seed:"));
+      return firstSeed ? firstSeed.slice(5) : null;
+    } catch {
+      return null;
+    }
+  }
+  function writeAutoHarvestZoneReplantSpecies(profile = "primary", species) {
+    try {
+      const next = typeof species === "string" && species.trim() ? species.trim() : null;
+      writeAutoHarvestZoneReplantSelections(profile, next ? [`Seed:${next}`] : []);
+      emitAutoHarvestZoneUpdate({ profile, replantSpecies: next });
+      return next;
+    } catch {
+      return null;
+    }
+  }
   function readAutoHarvestZoneSellEnabled(def = false) {
     try {
       const stored = readAriesPath(PATH_AUTO_HARVEST_ZONE_SELL);
@@ -13170,6 +13327,66 @@
       emitAutoHarvestZoneUpdate({ sellEnabled: !!on });
     } catch {
     }
+  }
+  function normalizeAutoHarvestMutationKey(value) {
+    const raw = String(value ?? "").trim().toLowerCase().replace(/\s+/g, "");
+    if (!raw) return "";
+    if (raw === "gold") return "gold";
+    if (raw === "rainbow") return "rainbow";
+    if (raw === "wet") return "wet";
+    if (raw === "chilled") return "chilled";
+    if (raw === "frozen") return "frozen";
+    if (raw === "thunderstruck" || raw === "thunder") return "thunderstruck";
+    if (raw === "dawnlit" || raw === "dawnlight" || raw === "downlight") return "dawnlit";
+    if (raw === "ambershine" || raw === "amberlit" || raw === "amberlight") return "ambershine";
+    if (raw === "dawncharged" || raw === "dawnbound") return "dawncharged";
+    if (raw === "ambercharged" || raw === "amberbound" || raw === "ambermoon") return "ambercharged";
+    return raw;
+  }
+  function normalizeAutoHarvestMutationFilters(raw) {
+    const text = Array.isArray(raw) ? raw.join(", ") : String(raw ?? "");
+    return Array.from(new Set(text.split(/[\n,;]+/).map((value) => normalizeAutoHarvestMutationKey(value)).filter(Boolean))).sort();
+  }
+  function normalizeAutoHarvestZoneSecondaryRules(raw) {
+    if (Array.isArray(raw)) {
+      return {
+        all: normalizeAutoHarvestMutationFilters(raw),
+        any: []
+      };
+    }
+    const all = normalizeAutoHarvestMutationFilters(raw?.all ?? []);
+    const any = normalizeAutoHarvestMutationFilters(raw?.any ?? []);
+    return { all, any };
+  }
+  function readAutoHarvestZoneSecondaryRules() {
+    try {
+      return normalizeAutoHarvestZoneSecondaryRules(readAriesPath(PATH_AUTO_HARVEST_ZONE_SECONDARY_RULES, { all: [], any: [] }));
+    } catch {
+      return { all: [], any: [] };
+    }
+  }
+  function writeAutoHarvestZoneSecondaryRules(value) {
+    try {
+      const normalized = normalizeAutoHarvestZoneSecondaryRules(value);
+      writeAriesPath(PATH_AUTO_HARVEST_ZONE_SECONDARY_RULES, normalized);
+      emitAutoHarvestZoneUpdate({ secondaryRules: normalized });
+      return normalized;
+    } catch {
+      return { all: [], any: [] };
+    }
+  }
+  function formatAutoHarvestMutationFilters(filters) {
+    const normalized = normalizeAutoHarvestMutationFilters(filters);
+    if (!normalized.length) return "No mutation filter";
+    const labels = normalized.map((key) => AUTO_HARVEST_ZONE_MUTATION_OPTIONS.find((entry) => entry.key.toLowerCase() === key)?.label ?? key);
+    return labels.join(", ");
+  }
+  function formatAutoHarvestZoneSecondaryRules(rules) {
+    const normalized = normalizeAutoHarvestZoneSecondaryRules(rules);
+    const parts = [];
+    if (normalized.all.length) parts.push(`all: ${formatAutoHarvestMutationFilters(normalized.all)}`);
+    if (normalized.any.length) parts.push(`one of: ${formatAutoHarvestMutationFilters(normalized.any)}`);
+    return parts.length ? parts.join(" Â· ") : "All crops";
   }
   function readAutoBuyRestockEnabled(def = false) {
     try {
@@ -13883,6 +14100,13 @@
       return null;
     }
   }
+  function getAutoHarvestZoneSecondary() {
+    try {
+      return normalizeAutoHarvestZone(readAriesPath(PATH_AUTO_HARVEST_ZONE_SECONDARY));
+    } catch {
+      return null;
+    }
+  }
   function formatAutoHarvestZoneLabel(zone) {
     const normalized = normalizeAutoHarvestZone(zone);
     if (!normalized) return "No zone selected";
@@ -13900,10 +14124,26 @@
     }
     return normalized;
   }
+  function setAutoHarvestZoneSecondary(zone) {
+    const normalized = normalizeAutoHarvestZone(zone);
+    try {
+      writeAriesPath(PATH_AUTO_HARVEST_ZONE_SECONDARY, normalized);
+      emitAutoHarvestZoneUpdate({ secondaryZone: normalized });
+    } catch {
+    }
+    return normalized;
+  }
   function clearAutoHarvestZone() {
     try {
       writeAriesPath(PATH_AUTO_HARVEST_ZONE, null);
       emitAutoHarvestZoneUpdate({ zone: null });
+    } catch {
+    }
+  }
+  function clearAutoHarvestZoneSecondary() {
+    try {
+      writeAriesPath(PATH_AUTO_HARVEST_ZONE_SECONDARY, null);
+      emitAutoHarvestZoneUpdate({ secondaryZone: null });
     } catch {
     }
   }
@@ -13974,23 +14214,26 @@
     });
   }
   var autoHarvestZoneCorner1 = null;
+  var autoHarvestZoneSelectionTarget = "primary";
   function cancelAutoHarvestZoneSelection() {
     autoHarvestZoneCorner1 = null;
+    autoHarvestZoneSelectionTarget = "primary";
     clearAutoHarvestZoneOverlay();
     emitAutoHarvestZoneSelection({ status: "idle", label: "Idle" });
   }
-  async function setAutoHarvestZoneCorner(which = 1) {
+  async function setAutoHarvestZoneCorner(which = 1, target = "primary") {
     const corner = await readCurrentPlayerDirtCorner();
     if (!corner) {
       emitAutoHarvestZoneSelection({ status: "error", label: "Stand on a dirt tile first" });
       await toastSimple("Auto harvest zone", "Stand on a dirt tile first.", "error");
       return false;
     }
+    autoHarvestZoneSelectionTarget = target === "secondary" ? "secondary" : "primary";
     if (which === 1) {
       autoHarvestZoneCorner1 = corner;
       clearAutoHarvestZoneOverlay();
-      emitAutoHarvestZoneSelection({ status: "first", label: `Corner 1 set: tile ${corner.localTileIndex}` });
-      await toastSimple("Auto harvest zone", "Corner 1 saved. Move to the opposite corner and press Set corner 2.", "info");
+      emitAutoHarvestZoneSelection({ status: "first", label: `${autoHarvestZoneSelectionTarget === "secondary" ? "Zone 2" : "Zone 1"} corner 1: tile ${corner.localTileIndex}` });
+      await toastSimple("Auto harvest zone", `${autoHarvestZoneSelectionTarget === "secondary" ? "Zone 2" : "Zone 1"} corner 1 saved. Move to the opposite corner and press Set corner 2.`, "info");
       return true;
     }
     if (!autoHarvestZoneCorner1) {
@@ -14005,11 +14248,14 @@
       await toastSimple("Auto harvest zone", "No dirt tiles were found inside that rectangle.", "error");
       return false;
     }
-    setAutoHarvestZone(zone);
+    if (autoHarvestZoneSelectionTarget === "secondary") setAutoHarvestZoneSecondary(zone);
+    else setAutoHarvestZone(zone);
     autoHarvestZoneCorner1 = null;
+    const targetLabel = autoHarvestZoneSelectionTarget === "secondary" ? "Zone 2" : "Zone 1";
+    autoHarvestZoneSelectionTarget = "primary";
     clearAutoHarvestZoneOverlay();
-    emitAutoHarvestZoneSelection({ status: "saved", label: `Zone saved: ${zone.localIndices.length} tiles` });
-    await toastSimple("Auto harvest zone", `Zone saved: ${formatAutoHarvestZoneLabel(zone)}.`, "success");
+    emitAutoHarvestZoneSelection({ status: "saved", label: `${targetLabel} saved: ${zone.localIndices.length} tiles` });
+    await toastSimple("Auto harvest zone", `${targetLabel} saved: ${formatAutoHarvestZoneLabel(zone)}.`, "success");
     return true;
   }
   function isAutoHarvestSlotMature(slot, tile = null) {
@@ -14027,6 +14273,116 @@
     const targetScale = Number(slot.targetScale ?? slot.scale);
     if (Number.isFinite(targetScale) && targetScale >= 1.999) return true;
     return false;
+  }
+  function matchesAutoHarvestMutationFilters(tile, slot, rules) {
+    const normalized = normalizeAutoHarvestZoneSecondaryRules(rules);
+    if (!normalized.all.length && !normalized.any.length) return true;
+    const names = new Set([...probeMutationList(tile), ...probeMutationList(slot)].map((value) => normalizeAutoHarvestMutationKey(value)).filter(Boolean));
+    if (!names.size) return false;
+    if (normalized.all.length && normalized.all.some((value) => !names.has(value))) return false;
+    if (normalized.any.length && !normalized.any.some((value) => names.has(value))) return false;
+    return true;
+  }
+  function buildAutoHarvestSeedInventoryMap(items) {
+    const map2 = /* @__PURE__ */ new Map();
+    for (const item of Array.isArray(items) ? items : []) {
+      const species = typeof item?.species === "string" ? item.species.trim() : "";
+      const qty = Number.isFinite(Number(item?.quantity)) ? Math.max(0, Math.floor(Number(item.quantity))) : 0;
+      if (!species || qty <= 0) continue;
+      map2.set(species, qty);
+    }
+    return map2;
+  }
+  function buildAutoHarvestEggInventoryMap(items) {
+    const map2 = /* @__PURE__ */ new Map();
+    for (const item of Array.isArray(items) ? items : []) {
+      const eggId = typeof item?.eggId === "string" ? item.eggId.trim() : "";
+      const qty = Number.isFinite(Number(item?.quantity)) ? Math.max(0, Math.floor(Number(item.quantity))) : 0;
+      if (!eggId || qty <= 0) continue;
+      map2.set(eggId, qty);
+    }
+    return map2;
+  }
+  function isAutoHarvestEggMature(tile) {
+    if (!tile || typeof tile !== "object" || tile.objectType !== "egg") return false;
+    const matureAt = Number(tile.maturedAt ?? tile.endTime);
+    return Number.isFinite(matureAt) && matureAt > 0 ? Date.now() >= matureAt : false;
+  }
+  async function didAutoHarvestTileMatch(localIdx, objectType, expectedId = null) {
+    try {
+      const garden = await PlayerService.getGardenState();
+      const obj = garden?.tileObjects?.[String(localIdx)] ?? null;
+      if (!obj || typeof obj !== "object") return objectType === null;
+      if (objectType && obj.objectType !== objectType) return false;
+      if (!expectedId) return true;
+      if (objectType === "plant") return String(obj.species ?? "") === String(expectedId);
+      if (objectType === "egg") return String(obj.eggId ?? "") === String(expectedId);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  async function autoHarvestPlantSeedWithFallback(localIdx, globalIdx, species) {
+    try {
+      await PlayerService.plantSeed(localIdx, species);
+    } catch {
+    }
+    if (await didAutoHarvestTileMatch(localIdx, "plant", species)) return true;
+    if (Number.isInteger(globalIdx) && globalIdx >= 0 && globalIdx !== localIdx) {
+      try {
+        await PlayerService.plantSeed(globalIdx, species);
+      } catch {
+      }
+      if (await didAutoHarvestTileMatch(localIdx, "plant", species)) return true;
+    }
+    return false;
+  }
+  async function autoHarvestPlantEggWithFallback(localIdx, globalIdx, eggId) {
+    try {
+      await PlayerService.plantEgg(localIdx, eggId);
+    } catch {
+    }
+    if (await didAutoHarvestTileMatch(localIdx, "egg", eggId)) return true;
+    if (Number.isInteger(globalIdx) && globalIdx >= 0 && globalIdx !== localIdx) {
+      try {
+        await PlayerService.plantEgg(globalIdx, eggId);
+      } catch {
+      }
+      if (await didAutoHarvestTileMatch(localIdx, "egg", eggId)) return true;
+    }
+    return false;
+  }
+  async function autoHarvestHatchEggWithFallback(localIdx, globalIdx) {
+    try {
+      await PlayerService.hatchEgg(localIdx);
+    } catch {
+    }
+    if (!await didAutoHarvestTileMatch(localIdx, "egg")) return true;
+    if (Number.isInteger(globalIdx) && globalIdx >= 0 && globalIdx !== localIdx) {
+      try {
+        await PlayerService.hatchEgg(globalIdx);
+      } catch {
+      }
+      if (!await didAutoHarvestTileMatch(localIdx, "egg")) return true;
+    }
+    return false;
+  }
+  function pickNextAutoHarvestReplantItem(tokens, seedInventory, eggInventory, cursor = 0) {
+    const list = Array.isArray(tokens) ? tokens : [];
+    if (!list.length) return null;
+    for (let offset = 0; offset < list.length; offset++) {
+      const index = (cursor + offset) % list.length;
+      const token = normalizeAutoHarvestZoneReplantToken(list[index]);
+      if (!token) continue;
+      if (token.startsWith("Seed:")) {
+        const species = token.slice(5);
+        if ((seedInventory.get(species) ?? 0) > 0) return { kind: "seed", token, id: species, index };
+      } else if (token.startsWith("Egg:")) {
+        const eggId = token.slice(4);
+        if ((eggInventory.get(eggId) ?? 0) > 0) return { kind: "egg", token, id: eggId, index };
+      }
+    }
+    return null;
   }
   function createAutoHarvestZoneController() {
     let timer = null;
@@ -14053,44 +14409,153 @@
       if (running) return;
       running = true;
       try {
-        if (!readAutoHarvestZoneEnabled(false)) return;
-        const zone = getAutoHarvestZone();
-        if (!zone || zone.localIndices.length === 0) return;
+        const primaryEnabled = readAutoHarvestZoneEnabled(false);
+        const secondaryEnabled = readAutoHarvestZoneSecondaryEnabled(false);
+        if (!primaryEnabled && !secondaryEnabled) return;
+        const primaryZone = getAutoHarvestZone();
+        const secondaryZone = getAutoHarvestZoneSecondary();
+        if ((!primaryZone || primaryZone.localIndices.length === 0) && (!secondaryZone || secondaryZone.localIndices.length === 0)) return;
         let harvestedCount = 0;
         let actionsLeft = AUTO_HARVEST_ZONE_MAX_ACTIONS_PER_TICK;
+        const harvestedTiles = /* @__PURE__ */ new Set();
         for (let pass = 0; pass < AUTO_HARVEST_ZONE_MAX_SCAN_PASSES && actionsLeft > 0; pass++) {
           const info = await collectCurrentUserGardenTiles();
           if (!info) return;
-          const watched = new Set(zone.localIndices);
+          const currentUserSlotIdx = Math.floor(Number(info.userSlotIdx ?? 0));
+          const activeZones = [];
+          if (primaryEnabled && primaryZone && primaryZone.localIndices.length > 0 && Number(primaryZone.userSlotIdx) === currentUserSlotIdx) {
+            activeZones.push({
+              type: "primary",
+              zone: primaryZone,
+              filters: [],
+              replantEnabled: readAutoHarvestZoneReplantEnabled("primary", false),
+              fillEmptyEnabled: readAutoHarvestZoneFillEmptyEnabled("primary", false),
+              replantItems: readAutoHarvestZoneReplantSelections("primary")
+            });
+          }
+          if (secondaryEnabled && secondaryZone && secondaryZone.localIndices.length > 0 && Number(secondaryZone.userSlotIdx) === currentUserSlotIdx) {
+            activeZones.push({
+              type: "secondary",
+              zone: secondaryZone,
+              rules: readAutoHarvestZoneSecondaryRules(),
+              replantEnabled: readAutoHarvestZoneReplantEnabled("secondary", false),
+              fillEmptyEnabled: readAutoHarvestZoneFillEmptyEnabled("secondary", false),
+              replantItems: readAutoHarvestZoneReplantSelections("secondary")
+            });
+          }
+          if (!activeZones.length) return;
+          const watched = new Map();
+          for (const profile of activeZones) {
+            for (const localIdx of profile.zone.localIndices) watched.set(localIdx, profile);
+          }
           const now = Date.now();
           pruneCooldowns(now);
           const candidates = [];
           for (const entry of info.dirt) {
             const localIdx = Number(entry?.localIdx);
-            if (!watched.has(localIdx)) continue;
+            const profile = watched.get(localIdx);
+            if (!profile) continue;
             const tile = entry?.obj;
-            if (!tile || typeof tile !== "object" || tile.objectType !== "plant") continue;
-            const slots = Array.isArray(tile.slots) ? tile.slots : [];
-            for (let slotIdx = 0; slotIdx < slots.length; slotIdx++) {
-              const slot = slots[slotIdx];
-              if (!slot || !isAutoHarvestSlotMature(slot, tile)) continue;
-              const key2 = `${localIdx}:${slotIdx}`;
+            const globalIdx = Number(entry?.globalIdx);
+            if (!tile || typeof tile !== "object") continue;
+            if (tile.objectType === "plant") {
+              const slots = Array.isArray(tile.slots) ? tile.slots : [];
+              for (let slotIdx = 0; slotIdx < slots.length; slotIdx++) {
+                const slot = slots[slotIdx];
+                if (!slot || !isAutoHarvestSlotMature(slot, tile)) continue;
+                if (profile.type === "secondary" && !matchesAutoHarvestMutationFilters(tile, slot, profile.rules)) continue;
+                const key2 = `${localIdx}:${slotIdx}`;
+                if ((cooldowns.get(key2) ?? 0) > now) continue;
+                candidates.push({ type: "plant", localIdx, globalIdx, slotIdx, key: key2 });
+              }
+            } else if (tile.objectType === "egg" && isAutoHarvestEggMature(tile)) {
+              const key2 = `egg:${localIdx}`;
               if ((cooldowns.get(key2) ?? 0) > now) continue;
-              candidates.push({ localIdx, slotIdx, key: key2 });
+              candidates.push({ type: "egg", localIdx, globalIdx, key: key2 });
             }
           }
-          candidates.sort((a, b) => a.localIdx - b.localIdx || a.slotIdx - b.slotIdx);
+          candidates.sort((a, b) => a.localIdx - b.localIdx || (a.slotIdx ?? -1) - (b.slotIdx ?? -1));
           const limited = candidates.slice(0, actionsLeft);
           if (!limited.length) break;
           for (const candidate of limited) {
             cooldowns.set(candidate.key, Date.now() + AUTO_HARVEST_ZONE_ACTION_COOLDOWN_MS);
             try {
-              await PlayerService.harvestCrop(candidate.localIdx, candidate.slotIdx);
-              harvestedCount += 1;
+              if (candidate.type === "plant") {
+                await PlayerService.harvestCrop(candidate.localIdx, candidate.slotIdx);
+                harvestedCount += 1;
+                harvestedTiles.add(candidate.localIdx);
+              } else if (candidate.type === "egg") {
+                const hatched = await autoHarvestHatchEggWithFallback(candidate.localIdx, candidate.globalIdx);
+                if (hatched) harvestedTiles.add(candidate.localIdx);
+              }
             } catch {
             }
             actionsLeft -= 1;
             if (actionsLeft <= 0) break;
+          }
+        }
+        if (actionsLeft > 0) {
+          const info = await collectCurrentUserGardenTiles();
+          if (!info) return;
+          const currentUserSlotIdx = Math.floor(Number(info.userSlotIdx ?? 0));
+          const seedInventory = buildAutoHarvestSeedInventoryMap(await getMySeedInventory());
+          const eggInventory = buildAutoHarvestEggInventoryMap(await getMyEggInventory());
+          const activeZones = [];
+          if (primaryEnabled && primaryZone && primaryZone.localIndices.length > 0 && Number(primaryZone.userSlotIdx) === currentUserSlotIdx) {
+            activeZones.push({
+              type: "primary",
+              zone: primaryZone,
+              replantEnabled: readAutoHarvestZoneReplantEnabled("primary", false),
+              fillEmptyEnabled: readAutoHarvestZoneFillEmptyEnabled("primary", false),
+              replantItems: readAutoHarvestZoneReplantSelections("primary")
+            });
+          }
+          if (secondaryEnabled && secondaryZone && secondaryZone.localIndices.length > 0 && Number(secondaryZone.userSlotIdx) === currentUserSlotIdx) {
+            activeZones.push({
+              type: "secondary",
+              zone: secondaryZone,
+              replantEnabled: readAutoHarvestZoneReplantEnabled("secondary", false),
+              fillEmptyEnabled: readAutoHarvestZoneFillEmptyEnabled("secondary", false),
+              replantItems: readAutoHarvestZoneReplantSelections("secondary")
+            });
+          }
+          for (const profile of activeZones) {
+            const items = Array.isArray(profile.replantItems) ? profile.replantItems : [];
+            if (!items.length) continue;
+            const watched = new Set(profile.zone.localIndices);
+            let plantCursor = 0;
+            for (const entry of info.dirt) {
+              if (actionsLeft <= 0) break;
+              const localIdx = Number(entry?.localIdx);
+              if (!watched.has(localIdx)) continue;
+              const tile = entry?.obj;
+              const globalIdx = Number(entry?.globalIdx);
+              const isEmpty = !tile || typeof tile !== "object" || tile.objectType !== "plant";
+              if (!isEmpty) continue;
+              const cameFromHarvest = harvestedTiles.has(localIdx);
+              if (!profile.fillEmptyEnabled && !(profile.replantEnabled && cameFromHarvest)) continue;
+              const key2 = `plant:${localIdx}`;
+              const now = Date.now();
+              if ((cooldowns.get(key2) ?? 0) > now) continue;
+              try {
+                const nextItem = pickNextAutoHarvestReplantItem(items, seedInventory, eggInventory, plantCursor);
+                if (!nextItem) break;
+                plantCursor = nextItem.index + 1;
+                let planted = false;
+                if (nextItem.kind === "seed") {
+                  planted = await autoHarvestPlantSeedWithFallback(localIdx, globalIdx, nextItem.id);
+                } else if (nextItem.kind === "egg") {
+                  planted = await autoHarvestPlantEggWithFallback(localIdx, globalIdx, nextItem.id);
+                }
+                if (!planted) continue;
+                cooldowns.set(key2, now + AUTO_HARVEST_ZONE_ACTION_COOLDOWN_MS);
+                const nextQty = nextItem.kind === "seed" ? Math.max(0, (seedInventory.get(nextItem.id) ?? 0) - 1) : Math.max(0, (eggInventory.get(nextItem.id) ?? 0) - 1);
+                if (nextItem.kind === "seed") seedInventory.set(nextItem.id, nextQty);
+                else eggInventory.set(nextItem.id, nextQty);
+                actionsLeft -= 1;
+              } catch {
+              }
+            }
           }
         }
         if (harvestedCount > 0 && readAutoHarvestZoneSellEnabled(false)) {
@@ -14121,10 +14586,10 @@
         }, AUTO_HARVEST_ZONE_TICK_MS);
         if (!unsubGarden) {
           PlayerService.onGardenDiffNow((garden2, diff) => {
-            const zone = getAutoHarvestZone();
-            if (!zone) return;
+            const zones = [getAutoHarvestZone(), getAutoHarvestZoneSecondary()].filter(Boolean);
+            if (!zones.length) return;
             const changed = new Set((diff?.changes || []).map((entry) => Number(entry?.slot)).filter((value) => Number.isInteger(value) && value >= 0));
-            clearCooldownsForZone(zone, changed.size ? changed : null);
+            for (const zone of zones) clearCooldownsForZone(zone, changed.size ? changed : null);
             void tick();
           }).then((fn) => {
             unsubGarden = typeof fn === "function" ? fn : null;
@@ -14895,6 +15360,28 @@
       const out = [];
       raw.forEach((x, i) => {
         const s = normalizeSeedItem(x, i);
+        if (s) out.push(s);
+      });
+      return out;
+    } catch {
+      return [];
+    }
+  }
+  function normalizeEggItem(x, _idx) {
+    if (!x || typeof x !== "object") return null;
+    const eggId = typeof x.eggId === "string" ? x.eggId.trim() : "";
+    const itemType = x.itemType === "Egg" ? "Egg" : null;
+    const quantity = Number.isFinite(x.quantity) ? Math.max(0, Math.floor(x.quantity)) : 0;
+    if (!eggId || itemType !== "Egg" || quantity <= 0) return null;
+    return { eggId, itemType: "Egg", quantity, id: `egg:${eggId}` };
+  }
+  async function getMyEggInventory() {
+    try {
+      const raw = await Atoms.inventory.myEggInventory.get();
+      if (!Array.isArray(raw)) return [];
+      const out = [];
+      raw.forEach((x, i) => {
+        const s = normalizeEggItem(x, i);
         if (s) out.push(s);
       });
       return out;
@@ -15725,8 +16212,22 @@
     setAutoStoreDecorShedEnabled,
     readAutoHarvestZoneEnabled,
     writeAutoHarvestZoneEnabled,
+    readAutoHarvestZoneSecondaryEnabled,
+    writeAutoHarvestZoneSecondaryEnabled,
+    readAutoHarvestZoneReplantEnabled,
+    writeAutoHarvestZoneReplantEnabled,
+    readAutoHarvestZoneFillEmptyEnabled,
+    writeAutoHarvestZoneFillEmptyEnabled,
+    readAutoHarvestZoneReplantSelections,
+    writeAutoHarvestZoneReplantSelections,
+    readAutoHarvestZoneReplantSpecies,
+    writeAutoHarvestZoneReplantSpecies,
     readAutoHarvestZoneSellEnabled,
     writeAutoHarvestZoneSellEnabled,
+    readAutoHarvestZoneSecondaryRules,
+    writeAutoHarvestZoneSecondaryRules,
+    formatAutoHarvestMutationFilters,
+    formatAutoHarvestZoneSecondaryRules,
     readAutoBuyRestockEnabled,
     writeAutoBuyRestockEnabled,
     readAutoBuyRestockFilters,
@@ -15744,9 +16245,12 @@
     getAutoHarvestZone,
     setAutoHarvestZone,
     clearAutoHarvestZone,
+    getAutoHarvestZoneSecondary,
+    setAutoHarvestZoneSecondary,
+    clearAutoHarvestZoneSecondary,
     formatAutoHarvestZoneLabel,
     startAutoHarvestZoneSelection() {
-      return setAutoHarvestZoneCorner(1);
+      return setAutoHarvestZoneCorner(1, "primary");
     },
     setAutoHarvestZoneCorner,
     cancelAutoHarvestZoneSelection,
@@ -15767,6 +16271,7 @@
     },
     // seeds
     getMySeedInventory,
+    getMyEggInventory,
     openSeedInventoryPreview,
     openSeedSelectorFlow,
     //delete
@@ -61696,6 +62201,39 @@ next: ${next}`;
       row.append(text, controls);
       return { row, controls };
     };
+    const createWideSettingRow = (title, description, control) => {
+      const row = applyStyles3(document.createElement("div"), {
+        display: "grid",
+        gap: "10px",
+        padding: "10px 12px",
+        border: "1px solid #2b3340",
+        borderRadius: "10px",
+        background: "#0f1318"
+      });
+      const text = applyStyles3(document.createElement("div"), {
+        display: "grid",
+        gap: "2px"
+      });
+      const titleEl = document.createElement("div");
+      titleEl.textContent = title;
+      titleEl.style.fontWeight = "600";
+      titleEl.style.fontSize = "13px";
+      text.appendChild(titleEl);
+      if (description) {
+        const desc = document.createElement("div");
+        desc.textContent = description;
+        desc.style.fontSize = "12px";
+        desc.style.opacity = "0.72";
+        text.appendChild(desc);
+      }
+      const controls = applyStyles3(document.createElement("div"), {
+        display: "block",
+        width: "100%"
+      });
+      controls.appendChild(control);
+      row.append(text, controls);
+      return { row, controls };
+    };
     const styleCard = (card2) => {
       card2.root.style.width = "100%";
       card2.root.style.maxWidth = "100%";
@@ -61746,8 +62284,8 @@ next: ${next}`;
       styleCard(card2);
       const toggle = ui.switch(MiscService.readAutoHarvestZoneEnabled(false));
       const toggleRow = createSettingRow(
-        "Enabled",
-        "Continuously scans the marked zone and collects mature crops.",
+        "Zone 1 enabled",
+        "Continuously scans Zone 1 and collects mature crops.",
         toggle
       );
       const sellToggle = ui.switch(MiscService.readAutoHarvestZoneSellEnabled(false));
@@ -61760,8 +62298,8 @@ next: ${next}`;
       zoneValue.style.maxWidth = "100%";
       zoneValue.style.whiteSpace = "normal";
       const zoneRow = createSettingRow(
-        "Zone",
-        "Set two corners on your garden to define the rectangle.",
+        "Zone 1",
+        "Main harvest rectangle for the current parcel.",
         zoneValue
       );
       const actions = ui.flexRow({ gap: 6 });
@@ -61771,9 +62309,284 @@ next: ${next}`;
       const btnClear = ui.btn("Clear zone", { size: "sm", disabled: !MiscService.getAutoHarvestZone() });
       actions.append(btnCorner1, btnCorner2, btnClear);
       const actionRow = createSettingRow(
-        "Actions",
+        "Zone 1 actions",
         "Stand on a dirt tile for each corner, then save the rectangle.",
         actions
+      );
+      const zone2Value = createPill(MiscService.formatAutoHarvestZoneLabel(MiscService.getAutoHarvestZoneSecondary()));
+      zone2Value.style.maxWidth = "100%";
+      zone2Value.style.whiteSpace = "normal";
+      const zone2Row = createSettingRow(
+        "Zone 2",
+        "Secondary harvest rectangle for another parcel.",
+        zone2Value
+      );
+      const zone2Toggle = ui.switch(MiscService.readAutoHarvestZoneSecondaryEnabled(false));
+      const zone2ToggleRow = createSettingRow(
+        "Zone 2 enabled",
+        "Activates the secondary parcel with mutation filters.",
+        zone2Toggle
+      );
+      const actions2 = ui.flexRow({ gap: 6 });
+      actions2.style.flexWrap = "wrap";
+      const btnZone2Corner1 = ui.btn("Set corner 1", { size: "sm" });
+      const btnZone2Corner2 = ui.btn("Set corner 2", { size: "sm" });
+      const btnZone2Clear = ui.btn("Clear zone 2", { size: "sm", disabled: !MiscService.getAutoHarvestZoneSecondary() });
+      actions2.append(btnZone2Corner1, btnZone2Corner2, btnZone2Clear);
+      const action2Row = createSettingRow(
+        "Zone 2 actions",
+        "Use this for the other parcel. It can be filtered by mutations.",
+        actions2
+      );
+      const zone2FilterWrap = applyStyles3(document.createElement("div"), {
+        display: "grid",
+        gap: "8px",
+        width: "100%",
+        minWidth: "280px",
+        maxWidth: "420px"
+      });
+      const zone2FiltersRow = createSettingRow(
+        "Zone 2 filters",
+        "Build mutation rules visually. Example: all Frozen + one of Dawnlit / Amberlit / Amberbound.",
+        zone2FilterWrap
+      );
+      const seedMeta = buildStaticMeta();
+      const createReplantUi = (profile, title) => {
+        const wrap = applyStyles3(document.createElement("div"), {
+          display: "grid",
+          gap: "8px",
+          width: "100%",
+          minWidth: "280px",
+          maxWidth: "420px"
+        });
+        const toggles = applyStyles3(document.createElement("div"), {
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "flex-end",
+          gap: "8px"
+        });
+        const replToggle = ui.switch(MiscService.readAutoHarvestZoneReplantEnabled(profile, false));
+        const fillToggle = ui.switch(MiscService.readAutoHarvestZoneFillEmptyEnabled(profile, false));
+        const replLabel = createPill("Replant harvested");
+        const fillLabel = createPill("Fill empty spots");
+        toggles.append(replLabel, replToggle, fillLabel, fillToggle);
+        const selectedSeed = createPill("No items selected");
+        selectedSeed.style.maxWidth = "100%";
+        selectedSeed.style.whiteSpace = "normal";
+        const statusLine = document.createElement("div");
+        Object.assign(statusLine.style, {
+          fontSize: "11px",
+          lineHeight: "1.4",
+          color: "#8fa3bd"
+        });
+        const seedGrid = applyStyles3(document.createElement("div"), {
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+          gap: "8px",
+          width: "100%"
+        });
+        wrap.append(toggles, selectedSeed, statusLine, seedGrid);
+        const refresh = async () => {
+          seedGrid.innerHTML = "";
+          const loading = document.createElement("div");
+          loading.textContent = "Loading items...";
+          loading.style.opacity = "0.7";
+          loading.style.fontSize = "12px";
+          seedGrid.appendChild(loading);
+          try {
+            const selectedItems = MiscService.readAutoHarvestZoneReplantSelections(profile);
+            const describeToken = (token) => {
+              if (typeof token !== "string") return token;
+              if (token.startsWith("Seed:")) {
+                const species = token.slice(5);
+                return seedMeta.get(`Seed:${species}`)?.name ?? seedNameFromSpecies(species) ?? species;
+              }
+              if (token.startsWith("Egg:")) {
+                const eggId = token.slice(4);
+                return eggNameFromId(eggId) ?? eggId;
+              }
+              return token;
+            };
+            const selectedPreview = selectedItems.slice(0, 3).map((token) => describeToken(token)).join(", ");
+            selectedSeed.textContent = selectedItems.length ? `Selected (${selectedItems.length}): ${selectedPreview}${selectedItems.length > 3 ? "..." : ""}` : "No items selected";
+            selectedSeed.style.color = selectedItems.length ? "#dbe7ff" : "#ffd7a8";
+            selectedSeed.style.borderColor = selectedItems.length ? "rgba(255,255,255,0.10)" : "rgba(245,158,11,0.35)";
+            selectedSeed.style.background = selectedItems.length ? "rgba(255,255,255,0.05)" : "rgba(245,158,11,0.10)";
+            const replInput = replToggle.querySelector("input");
+            const fillInput = fillToggle.querySelector("input");
+            if (replInput) replInput.checked = MiscService.readAutoHarvestZoneReplantEnabled(profile, false);
+            if (fillInput) fillInput.checked = MiscService.readAutoHarvestZoneFillEmptyEnabled(profile, false);
+            const seedInventory = await MiscService.getMySeedInventory();
+            const eggInventory = await MiscService.getMyEggInventory();
+            const seedInventoryMap = new Map();
+            for (const item of Array.isArray(seedInventory) ? seedInventory : []) {
+              const species = typeof item?.species === "string" ? item.species : "";
+              const qty = Number.isFinite(Number(item?.quantity)) ? Math.max(0, Math.floor(Number(item.quantity))) : 0;
+              if (!species) continue;
+              seedInventoryMap.set(species, (seedInventoryMap.get(species) ?? 0) + qty);
+            }
+            const eggInventoryMap = new Map();
+            for (const item of Array.isArray(eggInventory) ? eggInventory : []) {
+              const eggId = typeof item?.eggId === "string" ? item.eggId : "";
+              const qty = Number.isFinite(Number(item?.quantity)) ? Math.max(0, Math.floor(Number(item.quantity))) : 0;
+              if (!eggId) continue;
+              eggInventoryMap.set(eggId, (eggInventoryMap.get(eggId) ?? 0) + qty);
+            }
+            const availableEntries = [
+              ...Object.keys(plantCatalog2 || {}).filter((species) => !!plantCatalog2?.[species]?.seed).map((species) => ({
+                token: `Seed:${species}`,
+                kind: "Seed",
+                id: species,
+                name: seedMeta.get(`Seed:${species}`)?.name ?? seedNameFromSpecies(species) ?? species,
+                quantity: seedInventoryMap.get(species) ?? 0
+              })),
+              ...Object.keys(eggCatalog2 || {}).map((eggId) => ({
+                token: `Egg:${eggId}`,
+                kind: "Egg",
+                id: eggId,
+                name: eggNameFromId(eggId) ?? eggId,
+                quantity: eggInventoryMap.get(eggId) ?? 0
+              }))
+            ].sort((a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name));
+            const replOn = MiscService.readAutoHarvestZoneReplantEnabled(profile, false);
+            const fillOn = MiscService.readAutoHarvestZoneFillEmptyEnabled(profile, false);
+            const hasAnySelectedStock = selectedItems.some((token) => {
+              if (token.startsWith("Seed:")) return (seedInventoryMap.get(token.slice(5)) ?? 0) > 0;
+              if (token.startsWith("Egg:")) return (eggInventoryMap.get(token.slice(4)) ?? 0) > 0;
+              return false;
+            });
+            if (!selectedItems.length) {
+              statusLine.textContent = replOn || fillOn ? "Pick one or more seeds/eggs below first. Replant and fill-empty do nothing without selected items." : "Pick one or more seeds or eggs below if you want this zone to auto-place them.";
+              statusLine.style.color = replOn || fillOn ? "#fbbf24" : "#8fa3bd";
+            } else if (!hasAnySelectedStock) {
+              statusLine.textContent = "Selected items are configured, but none of them are currently in inventory.";
+              statusLine.style.color = "#fca5a5";
+            } else if (fillOn && replOn) {
+              statusLine.textContent = `Ready: will replant harvested tiles and fill empty spots using ${selectedItems.length} selected item(s).`;
+              statusLine.style.color = "#86efac";
+            } else if (fillOn) {
+              statusLine.textContent = `Ready: will fill empty spots using ${selectedItems.length} selected item(s).`;
+              statusLine.style.color = "#86efac";
+            } else if (replOn) {
+              statusLine.textContent = `Ready: will replant harvested tiles using ${selectedItems.length} selected item(s).`;
+              statusLine.style.color = "#86efac";
+            } else {
+              statusLine.textContent = `Selected ${selectedItems.length} item(s). Enable replant or fill-empty to use them.`;
+              statusLine.style.color = "#8fa3bd";
+            }
+            seedGrid.innerHTML = "";
+            for (const entry of availableEntries) {
+              const active = selectedItems.includes(entry.token);
+              const quantity = entry.quantity ?? 0;
+              const btn = document.createElement("button");
+              btn.type = "button";
+              Object.assign(btn.style, {
+                display: "grid",
+                gap: "6px",
+                textAlign: "left",
+                minHeight: "62px",
+                padding: "9px 10px",
+                borderRadius: "12px",
+                border: active ? "1px solid rgba(110,231,183,0.34)" : "1px solid rgba(255,255,255,0.08)",
+                background: active ? "linear-gradient(180deg, rgba(110,231,183,0.14) 0%, rgba(20,27,34,0.98) 100%)" : "linear-gradient(180deg, rgba(24,31,39,0.98) 0%, rgba(15,20,26,0.98) 100%)",
+                color: active ? "#f4fffd" : "#dbe7ff",
+                cursor: "pointer"
+              });
+              const top = applyStyles3(document.createElement("div"), {
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "8px"
+              });
+              const nameEl = document.createElement("div");
+              nameEl.textContent = entry.name;
+              nameEl.style.fontSize = "12px";
+              nameEl.style.fontWeight = "700";
+              const qty = document.createElement("span");
+              qty.textContent = `x${quantity}`;
+              Object.assign(qty.style, {
+                padding: "2px 7px",
+                borderRadius: "999px",
+                background: quantity > 0 ? "rgba(255,255,255,0.06)" : "rgba(239,68,68,0.12)",
+                border: quantity > 0 ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(239,68,68,0.18)",
+                fontSize: "10px",
+                color: quantity > 0 ? "#b6c4d8" : "#fca5a5"
+              });
+              const kindBadge = document.createElement("span");
+              kindBadge.textContent = entry.kind;
+              Object.assign(kindBadge.style, {
+                padding: "2px 7px",
+                borderRadius: "999px",
+                background: entry.kind === "Egg" ? "rgba(196, 181, 253, 0.18)" : "rgba(96, 165, 250, 0.18)",
+                border: entry.kind === "Egg" ? "1px solid rgba(196, 181, 253, 0.28)" : "1px solid rgba(96, 165, 250, 0.28)",
+                fontSize: "10px",
+                color: entry.kind === "Egg" ? "#ddd6fe" : "#bfdbfe"
+              });
+              const state = document.createElement("div");
+              state.textContent = active ? "Selected" : quantity > 0 ? "Use" : "Out";
+              state.style.fontSize = "10px";
+              state.style.fontWeight = "700";
+              state.style.textTransform = "uppercase";
+              state.style.letterSpacing = "0.03em";
+              state.style.color = active ? "#b8fff1" : quantity > 0 ? "#8fa3bd" : "#fca5a5";
+              const meta = applyStyles3(document.createElement("div"), {
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                flexWrap: "wrap",
+                justifyContent: "flex-end"
+              });
+              meta.append(kindBadge, qty);
+              top.append(nameEl, meta);
+              btn.append(top, state);
+              btn.onclick = () => {
+                const current = MiscService.readAutoHarvestZoneReplantSelections(profile);
+                const next = current.includes(entry.token) ? current.filter((token) => token !== entry.token) : [...current, entry.token];
+                MiscService.writeAutoHarvestZoneReplantSelections(profile, next);
+                void refresh();
+              };
+              seedGrid.appendChild(btn);
+            }
+            if (!seedGrid.childElementCount) {
+              const none = document.createElement("div");
+              none.textContent = "No seeds or eggs available";
+              none.style.opacity = "0.55";
+              none.style.fontSize = "12px";
+              seedGrid.appendChild(none);
+            }
+          } catch (error) {
+            seedGrid.innerHTML = "";
+            const err = document.createElement("div");
+            err.textContent = `Unable to load replant items: ${error?.message ?? error}`;
+            err.style.fontSize = "12px";
+            err.style.color = "#fca5a5";
+            err.style.whiteSpace = "normal";
+            statusLine.textContent = "Replant picker failed to load.";
+            statusLine.style.color = "#fca5a5";
+            seedGrid.appendChild(err);
+          }
+        };
+        replToggle.addEventListener("change", () => {
+          MiscService.writeAutoHarvestZoneReplantEnabled(profile, !!replToggle.checked);
+          void refresh();
+        });
+        fillToggle.addEventListener("change", () => {
+          MiscService.writeAutoHarvestZoneFillEmptyEnabled(profile, !!fillToggle.checked);
+          void refresh();
+        });
+        return { wrap, refresh };
+      };
+      const zone1ReplantUi = createReplantUi("primary", "Zone 1 replant");
+      const zone1ReplantRow = createWideSettingRow(
+        "Zone 1 replant",
+        "Choose a seed and decide whether to replant harvested tiles or fill empty spots.",
+        zone1ReplantUi.wrap
+      );
+      const zone2ReplantUi = createReplantUi("secondary", "Zone 2 replant");
+      const zone2ReplantRow = createWideSettingRow(
+        "Zone 2 replant",
+        "Separate seed and fill rules for the secondary parcel.",
+        zone2ReplantUi.wrap
       );
       const hint = document.createElement("div");
       hint.style.opacity = "0.8";
@@ -61789,34 +62602,192 @@ next: ${next}`;
       );
       const syncAutoHarvestZoneUi = () => {
         const zone = MiscService.getAutoHarvestZone();
+        const zone2 = MiscService.getAutoHarvestZoneSecondary();
         zoneValue.textContent = MiscService.formatAutoHarvestZoneLabel(zone);
+        zone2Value.textContent = MiscService.formatAutoHarvestZoneLabel(zone2);
         btnClear.disabled = !zone;
-        hint.textContent = zone ? "The selected rectangle will be scanned automatically while you stay on the same garden slot." : "No zone selected yet.";
+        btnZone2Clear.disabled = !zone2;
+        const secondaryRules = MiscService.readAutoHarvestZoneSecondaryRules();
+        zone2FilterWrap.innerHTML = "";
+        const mutationBadge = (key, removable = false, onRemove = null) => {
+          const opt = AUTO_HARVEST_ZONE_MUTATION_OPTIONS.find((entry) => entry.key.toLowerCase() === key);
+          const wrap = applyStyles3(document.createElement("div"), {
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "4px"
+          });
+          const badge = createPill(opt?.label ?? key);
+          badge.style.margin = "0";
+          badge.style.background = "rgba(250,204,21,0.12)";
+          badge.style.border = "1px solid rgba(250,204,21,0.3)";
+          badge.style.color = "#fff0b0";
+          wrap.appendChild(badge);
+          if (removable) {
+            const xBtn = applyStyles3(document.createElement("button"), {
+              background: "none",
+              border: "none",
+              color: "rgba(255,255,255,0.65)",
+              fontSize: "14px",
+              cursor: "pointer",
+              padding: "0 2px",
+              lineHeight: "1"
+            });
+            xBtn.type = "button";
+            xBtn.textContent = "\xD7";
+            xBtn.onclick = onRemove;
+            wrap.appendChild(xBtn);
+          }
+          return wrap;
+        };
+        const createRuleBuilder = (title, mode) => {
+          const current = Array.isArray(secondaryRules?.[mode]) ? secondaryRules[mode] : [];
+          const selectedSet = new Set(current);
+          const remaining = AUTO_HARVEST_ZONE_MUTATION_OPTIONS.filter((entry) => !selectedSet.has(entry.key.toLowerCase()));
+          const box = applyStyles3(document.createElement("div"), {
+            padding: "8px 10px",
+            border: "1px solid rgba(255,255,255,0.10)",
+            borderRadius: "10px",
+            background: "rgba(255,255,255,0.02)",
+            display: "grid",
+            gap: "8px"
+          });
+          const rowHeader = applyStyles3(document.createElement("div"), {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between"
+          });
+          const rowTitle = applyStyles3(document.createElement("div"), {
+            fontWeight: "600",
+            fontSize: "13px"
+          });
+          rowTitle.textContent = title;
+          const addBtn = applyStyles3(document.createElement("button"), {
+            border: "1px solid rgba(255,255,255,0.25)",
+            borderRadius: "6px",
+            background: "rgba(255,255,255,0.08)",
+            color: "#fff",
+            fontSize: "16px",
+            lineHeight: "1",
+            padding: "2px 8px",
+            cursor: "pointer",
+            fontWeight: "700"
+          });
+          addBtn.type = "button";
+          addBtn.textContent = "+";
+          rowHeader.append(rowTitle, addBtn);
+          const selectedArea = applyStyles3(document.createElement("div"), {
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "6px",
+            alignItems: "center"
+          });
+          if (!current.length) {
+            const none = applyStyles3(document.createElement("span"), {
+              fontSize: "12px",
+              opacity: "0.5"
+            });
+            none.textContent = mode === "all" ? "No required mutations" : "No optional group";
+            selectedArea.appendChild(none);
+          } else {
+            for (const key of current) {
+              selectedArea.appendChild(mutationBadge(key, true, () => {
+                const rules = MiscService.readAutoHarvestZoneSecondaryRules();
+                MiscService.writeAutoHarvestZoneSecondaryRules({
+                  ...rules,
+                  [mode]: (rules[mode] ?? []).filter((value) => value !== key)
+                });
+                syncAutoHarvestZoneUi();
+              }));
+            }
+          }
+          const pickerArea = applyStyles3(document.createElement("div"), {
+            display: remaining.length ? "flex" : "none",
+            flexWrap: "wrap",
+            gap: "6px",
+            alignItems: "center",
+            padding: "8px",
+            background: "rgba(0,0,0,0.25)",
+            borderRadius: "8px"
+          });
+          let pickerOpen = false;
+          const renderPicker = () => {
+            pickerArea.innerHTML = "";
+            const rules = MiscService.readAutoHarvestZoneSecondaryRules();
+            const selectedNow = new Set(rules[mode] ?? []);
+            const nextRemaining = AUTO_HARVEST_ZONE_MUTATION_OPTIONS.filter((entry) => !selectedNow.has(entry.key.toLowerCase()));
+            pickerArea.style.display = pickerOpen && nextRemaining.length ? "flex" : "none";
+            addBtn.textContent = pickerOpen ? "\xD7" : "+";
+            for (const entry of nextRemaining) {
+              const badge = mutationBadge(entry.key.toLowerCase());
+              badge.style.cursor = "pointer";
+              badge.onclick = () => {
+                const currentRules = MiscService.readAutoHarvestZoneSecondaryRules();
+                MiscService.writeAutoHarvestZoneSecondaryRules({
+                  ...currentRules,
+                  [mode]: [...(currentRules[mode] ?? []), entry.key.toLowerCase()]
+                });
+                syncAutoHarvestZoneUi();
+              };
+              pickerArea.appendChild(badge);
+            }
+          };
+          addBtn.onclick = (ev) => {
+            ev.stopPropagation();
+            pickerOpen = !pickerOpen;
+            renderPicker();
+          };
+          box.append(rowHeader, selectedArea, pickerArea);
+          renderPicker();
+          return box;
+        };
+        zone2FilterWrap.append(
+          createRuleBuilder("Must have all", "all"),
+          createRuleBuilder("Must have one of", "any")
+        );
+        void zone1ReplantUi.refresh();
+        void zone2ReplantUi.refresh();
+        hint.textContent = zone || zone2 ? `Zone 1: ${zone ? `${MiscService.readAutoHarvestZoneEnabled(false) ? "enabled" : "disabled"}` : "empty"} Â· Zone 2: ${zone2 ? `${MiscService.readAutoHarvestZoneSecondaryEnabled(false) ? "enabled" : "disabled"} Â· ${formatAutoHarvestZoneSecondaryRules(secondaryRules)}` : "empty"}` : "No zones selected yet.";
       };
       const onSelectionState = (event) => {
         selectionState.textContent = event?.detail?.label || "Idle";
       };
       toggle.addEventListener("change", () => {
         MiscService.writeAutoHarvestZoneEnabled(!!toggle.checked);
+        syncAutoHarvestZoneUi();
+      });
+      zone2Toggle.addEventListener("change", () => {
+        MiscService.writeAutoHarvestZoneSecondaryEnabled(!!zone2Toggle.checked);
+        syncAutoHarvestZoneUi();
       });
       sellToggle.addEventListener("change", () => {
         MiscService.writeAutoHarvestZoneSellEnabled(!!sellToggle.checked);
       });
       btnCorner1.onclick = () => {
-        void MiscService.setAutoHarvestZoneCorner(1);
+        void MiscService.setAutoHarvestZoneCorner(1, "primary");
       };
       btnCorner2.onclick = () => {
-        void MiscService.setAutoHarvestZoneCorner(2);
+        void MiscService.setAutoHarvestZoneCorner(2, "primary");
       };
       btnClear.onclick = async () => {
         MiscService.cancelAutoHarvestZoneSelection();
         MiscService.clearAutoHarvestZone();
         await toastSimple("Auto harvest zone", "Saved zone cleared.", "info");
       };
+      btnZone2Corner1.onclick = () => {
+        void MiscService.setAutoHarvestZoneCorner(1, "secondary");
+      };
+      btnZone2Corner2.onclick = () => {
+        void MiscService.setAutoHarvestZoneCorner(2, "secondary");
+      };
+      btnZone2Clear.onclick = async () => {
+        MiscService.cancelAutoHarvestZoneSelection();
+        MiscService.clearAutoHarvestZoneSecondary();
+        await toastSimple("Auto harvest zone", "Zone 2 cleared.", "info");
+      };
       window.addEventListener("qws:autoharvestzone:update", syncAutoHarvestZoneUi);
       window.addEventListener("qws:autoharvestzone:selection", onSelectionState);
       syncAutoHarvestZoneUi();
-      card2.body.append(toggleRow.row, sellRow.row, zoneRow.row, selectionRow.row, actionRow.row, hint);
+      card2.body.append(toggleRow.row, sellRow.row, zoneRow.row, actionRow.row, zone1ReplantRow.row, zone2ToggleRow.row, zone2Row.row, action2Row.row, zone2FiltersRow.row, zone2ReplantRow.row, selectionRow.row, hint);
       card2.root.__cleanup__ = () => {
         window.removeEventListener("qws:autoharvestzone:update", syncAutoHarvestZoneUi);
         window.removeEventListener("qws:autoharvestzone:selection", onSelectionState);
@@ -62922,15 +63893,16 @@ next: ${next}`;
     updateBtn.style.cursor = "pointer";
     updateBtn.style.letterSpacing = "0.03em";
     updateBtn.addEventListener("click", () => {
+      const url = `${customUpdateUrl}?t=${Date.now()}`;
       try {
         if (typeof GM_openInTab === "function") {
-          GM_openInTab(customUpdateUrl, { active: true, insert: true, setParent: true });
+          GM_openInTab(url, { active: true, insert: true, setParent: true });
           return;
         }
       } catch {
       }
       try {
-        window.open(customUpdateUrl, "_blank", "noopener,noreferrer");
+        window.open(url, "_blank", "noopener,noreferrer");
       } catch {
       }
     });
@@ -65954,8 +66926,4 @@ next: ${next}`;
     initializeStreamsWhenReady();
   })();
 })();
-
-
-
-
 
